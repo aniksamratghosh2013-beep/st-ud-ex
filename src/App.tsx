@@ -13,6 +13,7 @@ import Profile from "./pages/Profile";
 import Organizations from "./pages/Organizations";
 import OrganizationDetail from "./pages/OrganizationDetail";
 import Admin from "./pages/Admin";
+import Chat from "./pages/Chat";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -57,6 +58,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <AppLayout><OrganizationDetail /></AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/chat"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout><Chat /></AppLayout>
                   </ProtectedRoute>
                 }
               />

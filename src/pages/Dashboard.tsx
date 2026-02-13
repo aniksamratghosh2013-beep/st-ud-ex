@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, Users, Activity } from "lucide-react";
+import { Building2, Users, Activity, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { Skeleton } from "@/components/ui/skeleton";
+import { motion } from "framer-motion";
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [orgCount, setOrgCount] = useState(0);
   const [membershipCount, setMembershipCount] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
@@ -21,6 +24,7 @@ export default function Dashboard() {
 
       setOrgCount(orgs ?? 0);
       setMembershipCount(orgs ?? 0);
+      setLoading(false);
     };
 
     fetchStats();
@@ -33,48 +37,45 @@ export default function Dashboard() {
     return "Good evening";
   };
 
+  const cards = [
+    { title: "My Organizations", value: orgCount, desc: "Active memberships", icon: Building2 },
+    { title: "Connections", value: membershipCount, desc: "Team members", icon: Users },
+    { title: "Messages", value: "—", desc: "Check your chat", icon: MessageSquare },
+  ];
+
   return (
     <div className="space-y-6">
-      <div>
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-3xl font-bold font-[family-name:var(--font-heading)]">
           {greeting()}, {user?.user_metadata?.full_name || "there"}
         </h1>
         <p className="text-muted-foreground mt-1">Here's what's happening across your organizations.</p>
-      </div>
+      </motion.div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">My Organizations</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{orgCount}</div>
-            <p className="text-xs text-muted-foreground">Active memberships</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Connections</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{membershipCount}</div>
-            <p className="text-xs text-muted-foreground">Team members</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Activity</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">—</div>
-            <p className="text-xs text-muted-foreground">Coming in Phase 2</p>
-          </CardContent>
-        </Card>
+        {cards.map((card, i) => (
+          <motion.div
+            key={card.title}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+          >
+            <Card className="hover:shadow-md transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
+                <card.icon className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  <div className="text-2xl font-bold">{card.value}</div>
+                )}
+                <p className="text-xs text-muted-foreground">{card.desc}</p>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
       </div>
     </div>
   );
