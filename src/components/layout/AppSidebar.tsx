@@ -6,6 +6,7 @@ import {
   Shield,
   Settings,
   Zap,
+  MessageSquare,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -24,6 +25,7 @@ import {
 const mainNav = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Organizations", url: "/organizations", icon: Building2 },
+  { title: "Chat", url: "/chat", icon: MessageSquare },
   { title: "Profile", url: "/profile", icon: UserCircle },
 ];
 

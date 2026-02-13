@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, forwardRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,7 @@ interface Props {
   onSwitch: (view: "login" | "signup" | "forgot" | "magic") => void;
 }
 
-export function MagicLinkForm({ onSwitch }: Props) {
+export const MagicLinkForm = forwardRef<HTMLDivElement, Props>(({ onSwitch }, ref) => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -33,7 +33,7 @@ export function MagicLinkForm({ onSwitch }: Props) {
   };
 
   return (
-    <Card className="border-0 shadow-lg">
+    <Card ref={ref} className="border-0 shadow-lg">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl font-[family-name:var(--font-heading)]">Magic Link</CardTitle>
         <CardDescription>Sign in without a password</CardDescription>
@@ -71,4 +71,6 @@ export function MagicLinkForm({ onSwitch }: Props) {
       </CardContent>
     </Card>
   );
-}
+});
+
+MagicLinkForm.displayName = "MagicLinkForm";
