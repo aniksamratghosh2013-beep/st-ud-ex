@@ -125,16 +125,31 @@ export default function Chat() {
   const handleSend = async () => {
     if (!newMessage.trim() || !user || !selectedChannel) return;
     setSending(true);
-    const { error } = await supabase.from("chat_messages").insert({
+    const content = newMessage.trim();
+    const { data: msgData, error } = await supabase.from("chat_messages").insert({
       channel_id: selectedChannel,
       user_id: user.id,
-      content: newMessage.trim(),
-    });
+      content,
+    }).select().single();
     setSending(false);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
       setNewMessage("");
+      // Fire-and-forget: moderate message
+      if (msgData) {
+        supabase.functions.invoke("moderate-message", {
+          body: { messageId: msgData.id, content, userId: user.id, channelId: selectedChannel },
+        }).catch(console.error);
+      }
+      // Fire-and-forget: notify admin of chat activity
+      const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single();
+      supabase.functions.invoke("notify-admin", {
+        body: {
+          type: "chat_message",
+          data: { userName: profile?.full_name || "Unknown", channelName: currentChannel?.name || "", content },
+        },
+      }).catch(console.error);
     }
   };
 
