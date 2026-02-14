@@ -202,7 +202,7 @@ export default function OrganizationDetail() {
                 </Avatar>
                 <div>
                   <span className="text-sm font-medium">{m.profile?.full_name || "Unknown"}</span>
-                  <Badge variant="outline" className="ml-2 text-xs">{m.role || "member"}</Badge>
+                  <Badge variant="outline" className="ml-2 text-xs">{m.role === "founder" ? "🏆 Founder" : m.role || "member"}</Badge>
                 </div>
               </div>
               {isAdmin && m.user_id !== user?.id && (
@@ -218,6 +218,7 @@ export default function OrganizationDetail() {
                       <SelectItem value="member">Member</SelectItem>
                       <SelectItem value="moderator">Moderator</SelectItem>
                       <SelectItem value="org_admin">Admin</SelectItem>
+                      <SelectItem value="founder">Founder</SelectItem>
                     </SelectContent>
                   </Select>
                   <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => handleRemove(m.user_id)}>

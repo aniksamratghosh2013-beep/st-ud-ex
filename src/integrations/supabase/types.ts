@@ -235,6 +235,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      is_global_admin: { Args: { _user_id: string }; Returns: boolean }
       is_member: {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
@@ -254,7 +255,7 @@ export type Database = {
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "super_admin" | "org_admin" | "moderator" | "member"
+      app_role: "super_admin" | "org_admin" | "moderator" | "member" | "founder"
       membership_status: "pending" | "approved" | "rejected"
       privacy_setting: "public" | "members_only" | "private"
     }
@@ -384,7 +385,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["super_admin", "org_admin", "moderator", "member"],
+      app_role: ["super_admin", "org_admin", "moderator", "member", "founder"],
       membership_status: ["pending", "approved", "rejected"],
       privacy_setting: ["public", "members_only", "private"],
     },
