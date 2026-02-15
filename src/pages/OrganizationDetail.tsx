@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Check, X, UserMinus, Shield, Pencil } from "lucide-react";
+import { Check, X, UserMinus, Shield, Pencil, Camera } from "lucide-react";
 import type { Tables, Enums } from "@/integrations/supabase/types";
 
 interface MemberWithProfile {
@@ -134,6 +134,26 @@ export default function OrganizationDetail() {
     fetchData();
   };
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!id || !e.target.files?.[0]) return;
+    const file = e.target.files[0];
+    const filePath = `${id}/${Date.now()}-${file.name}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("org-logos")
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) {
+      toast({ title: "Upload failed", description: uploadError.message, variant: "destructive" });
+      return;
+    }
+
+    const { data: urlData } = supabase.storage.from("org-logos").getPublicUrl(filePath);
+    await supabase.from("organizations").update({ logo_url: urlData.publicUrl }).eq("id", id);
+    setOrg((o) => o ? { ...o, logo_url: urlData.publicUrl } : o);
+    toast({ title: "Logo updated" });
+  };
+
   const handleSaveBio = async () => {
     if (!id) return;
     const { error } = await supabase
@@ -167,12 +187,20 @@ export default function OrganizationDetail() {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-start gap-4">
-        <Avatar className="h-16 w-16">
-          <AvatarImage src={org.logo_url || ""} />
-          <AvatarFallback className="text-xl bg-primary/10 text-primary font-bold">
-            {org.name[0]?.toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
+        <div className="relative">
+          <Avatar className="h-16 w-16">
+            <AvatarImage src={org.logo_url || ""} />
+            <AvatarFallback className="text-xl bg-primary/10 text-primary font-bold">
+              {org.name[0]?.toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          {canEditBio && (
+            <label className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors">
+              <Camera className="h-3.5 w-3.5" />
+              <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} />
+            </label>
+          )}
+        </div>
         <div className="flex-1">
           <h1 className="text-3xl font-bold font-[family-name:var(--font-heading)]">{org.name}</h1>
           {editingBio ? (
