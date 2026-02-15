@@ -6,9 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Check, X, UserMinus, Shield } from "lucide-react";
+import { Check, X, UserMinus, Shield, Pencil } from "lucide-react";
 import type { Tables, Enums } from "@/integrations/supabase/types";
 
 interface MemberWithProfile {
@@ -26,13 +27,20 @@ export default function OrganizationDetail() {
   const [org, setOrg] = useState<Tables<"organizations"> | null>(null);
   const [members, setMembers] = useState<MemberWithProfile[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [isFounder, setIsFounder] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [editingBio, setEditingBio] = useState(false);
+  const [bioText, setBioText] = useState("");
+
+  const canManage = isAdmin || isSuperAdmin;
 
   const fetchData = async () => {
     if (!id) return;
 
     const { data: orgData } = await supabase.from("organizations").select("*").eq("id", id).single();
     setOrg(orgData);
+    setBioText(orgData?.description || "");
 
     const { data: memberships } = await supabase
       .from("organization_memberships")
@@ -58,13 +66,14 @@ export default function OrganizationDetail() {
       setMembers(memberData);
     }
 
-    // Check admin status
     if (user) {
-      const { data: adminCheck } = await supabase.rpc("is_org_admin", {
-        _user_id: user.id,
-        _org_id: id,
-      });
+      const [{ data: adminCheck }, { data: superCheck }] = await Promise.all([
+        supabase.rpc("is_org_admin", { _user_id: user.id, _org_id: id }),
+        supabase.rpc("is_super_admin", { _user_id: user.id }),
+      ]);
       setIsAdmin(adminCheck === true);
+      setIsSuperAdmin(superCheck === true);
+      setIsFounder(orgData?.created_by === user.id);
     }
 
     setLoading(false);
@@ -81,7 +90,6 @@ export default function OrganizationDetail() {
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
-      // If approved, also add member role
       if (status === "approved") {
         const membership = members.find((m) => m.id === membershipId);
         if (membership && id) {
@@ -99,7 +107,6 @@ export default function OrganizationDetail() {
 
   const handleRoleChange = async (userId: string, newRole: Enums<"app_role">) => {
     if (!id) return;
-    // Verify membership before role assignment
     const member = members.find(m => m.user_id === userId && m.status === 'approved');
     if (!member) {
       toast({ title: "Error", description: "User must be an approved member", variant: "destructive" });
@@ -127,6 +134,21 @@ export default function OrganizationDetail() {
     fetchData();
   };
 
+  const handleSaveBio = async () => {
+    if (!id) return;
+    const { error } = await supabase
+      .from("organizations")
+      .update({ description: bioText.trim().substring(0, 2000) })
+      .eq("id", id);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Organization bio updated" });
+      setEditingBio(false);
+      fetchData();
+    }
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center h-64">
       <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -139,25 +161,49 @@ export default function OrganizationDetail() {
 
   const pendingMembers = members.filter((m) => m.status === "pending");
   const approvedMembers = members.filter((m) => m.status === "approved");
+  const canEditBio = isFounder || isAdmin || isSuperAdmin;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-start gap-4">
         <Avatar className="h-16 w-16">
           <AvatarImage src={org.logo_url || ""} />
           <AvatarFallback className="text-xl bg-primary/10 text-primary font-bold">
             {org.name[0]?.toUpperCase()}
           </AvatarFallback>
         </Avatar>
-        <div>
+        <div className="flex-1">
           <h1 className="text-3xl font-bold font-[family-name:var(--font-heading)]">{org.name}</h1>
-          <p className="text-muted-foreground">{org.description || "No description"}</p>
+          {editingBio ? (
+            <div className="mt-2 space-y-2">
+              <Textarea
+                value={bioText}
+                onChange={(e) => setBioText(e.target.value)}
+                placeholder="Write a bio for this organization..."
+                className="min-h-[100px] resize-none"
+                maxLength={2000}
+              />
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleSaveBio}>Save</Button>
+                <Button size="sm" variant="outline" onClick={() => { setEditingBio(false); setBioText(org.description || ""); }}>Cancel</Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-start gap-2 mt-1">
+              <p className="text-muted-foreground whitespace-pre-wrap">{org.description || "No description"}</p>
+              {canEditBio && (
+                <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={() => setEditingBio(true)}>
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Pending Requests (admin only) */}
-      {isAdmin && pendingMembers.length > 0 && (
+      {/* Pending Requests */}
+      {canManage && pendingMembers.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -207,7 +253,7 @@ export default function OrganizationDetail() {
                   <Badge variant="outline" className="ml-2 text-xs">{m.role === "founder" ? "🏆 Founder" : m.role || "member"}</Badge>
                 </div>
               </div>
-              {isAdmin && m.user_id !== user?.id && (
+              {canManage && m.user_id !== user?.id && (
                 <div className="flex items-center gap-2">
                   <Select
                     value={m.role || "member"}
@@ -220,7 +266,7 @@ export default function OrganizationDetail() {
                       <SelectItem value="member">Member</SelectItem>
                       <SelectItem value="moderator">Moderator</SelectItem>
                       <SelectItem value="org_admin">Admin</SelectItem>
-                      <SelectItem value="founder">Founder</SelectItem>
+                      {(isFounder || isSuperAdmin) && <SelectItem value="founder">Founder</SelectItem>}
                     </SelectContent>
                   </Select>
                   <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => handleRemove(m.user_id)}>
