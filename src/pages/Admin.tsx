@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useToast } from "@/hooks/use-toast";
 import { Users, Building2, Shield, Ban, AlertTriangle, CheckCircle, XCircle, UserPlus } from "lucide-react";
 import type { Tables, Enums } from "@/integrations/supabase/types";
+import { sanitizeError } from "@/lib/sanitize-error";
 
 interface BanRow {
   id: string;
@@ -92,7 +93,7 @@ export default function Admin() {
 
     const { data: ban, error } = await (supabase as any).from("bans").insert(payload).select().single();
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: sanitizeError(error), variant: "destructive" });
       return;
     }
 

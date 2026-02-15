@@ -57,14 +57,20 @@ serve(async (req) => {
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) throw new Error('Supabase env not configured');
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const { messageId, content, channelId } = await req.json();
+    const body = await req.json();
+    const { messageId, content, channelId } = body;
 
     // Use the authenticated user's ID, not client-supplied userId
     const userId = authenticatedUserId;
 
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
     // Validate inputs
-    if (!messageId || typeof messageId !== 'string') {
+    if (!messageId || typeof messageId !== 'string' || !uuidRegex.test(messageId)) {
       return new Response(JSON.stringify({ error: 'Invalid messageId' }), { status: 400, headers: corsHeaders });
+    }
+    if (channelId && (typeof channelId !== 'string' || !uuidRegex.test(channelId))) {
+      return new Response(JSON.stringify({ error: 'Invalid channelId' }), { status: 400, headers: corsHeaders });
     }
     if (!content || typeof content !== 'string' || content.length > 4000) {
       return new Response(JSON.stringify({ error: 'Invalid content' }), { status: 400, headers: corsHeaders });

@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Camera, Save } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import { sanitizeError } from "@/lib/sanitize-error";
 
 export default function Profile() {
   const { user } = useAuth();
@@ -54,7 +55,7 @@ export default function Profile() {
 
     setSaving(false);
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: sanitizeError(error), variant: "destructive" });
     } else {
       toast({ title: "Profile updated" });
     }
@@ -70,7 +71,7 @@ export default function Profile() {
       .upload(filePath, file, { upsert: true });
 
     if (uploadError) {
-      toast({ title: "Upload failed", description: uploadError.message, variant: "destructive" });
+      toast({ title: "Upload failed", description: sanitizeError(uploadError), variant: "destructive" });
       return;
     }
 

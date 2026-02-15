@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Check, X, UserMinus, Shield, Pencil, Camera } from "lucide-react";
 import type { Tables, Enums } from "@/integrations/supabase/types";
+import { sanitizeError } from "@/lib/sanitize-error";
 
 interface MemberWithProfile {
   id: string;
@@ -88,7 +89,7 @@ export default function OrganizationDetail() {
       .eq("id", membershipId);
 
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: sanitizeError(error), variant: "destructive" });
     } else {
       if (status === "approved") {
         const membership = members.find((m) => m.id === membershipId);
@@ -119,7 +120,7 @@ export default function OrganizationDetail() {
         { onConflict: 'user_id,organization_id' }
       );
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: sanitizeError(error), variant: "destructive" });
     } else {
       toast({ title: "Role updated" });
     }
@@ -144,7 +145,7 @@ export default function OrganizationDetail() {
       .upload(filePath, file, { upsert: true });
 
     if (uploadError) {
-      toast({ title: "Upload failed", description: uploadError.message, variant: "destructive" });
+      toast({ title: "Upload failed", description: sanitizeError(uploadError), variant: "destructive" });
       return;
     }
 
@@ -161,7 +162,7 @@ export default function OrganizationDetail() {
       .update({ description: bioText.trim().substring(0, 2000) })
       .eq("id", id);
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: sanitizeError(error), variant: "destructive" });
     } else {
       toast({ title: "Organization bio updated" });
       setEditingBio(false);

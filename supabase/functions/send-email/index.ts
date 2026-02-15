@@ -48,6 +48,10 @@ serve(async (req) => {
     const { to, subject, html } = await req.json();
 
     // Validate inputs
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (to && (typeof to !== 'string' || !emailRegex.test(to) || to.length > 320)) {
+      return new Response(JSON.stringify({ error: 'Invalid email address' }), { status: 400, headers: corsHeaders });
+    }
     if (!subject || typeof subject !== 'string' || subject.length > 200) {
       return new Response(JSON.stringify({ error: 'Invalid subject' }), { status: 400, headers: corsHeaders });
     }
