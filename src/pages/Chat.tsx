@@ -124,8 +124,12 @@ export default function Chat() {
 
   const handleSend = async () => {
     if (!newMessage.trim() || !user || !selectedChannel) return;
-    setSending(true);
     const content = newMessage.trim();
+    if (content.length > 4000) {
+      toast({ title: "Error", description: "Message too long (max 4000 characters)", variant: "destructive" });
+      return;
+    }
+    setSending(true);
     const { data: msgData, error } = await supabase.from("chat_messages").insert({
       channel_id: selectedChannel,
       user_id: user.id,

@@ -28,6 +28,26 @@ serve(async (req) => {
   }
 
   try {
+    // Authenticate the caller
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+    }
+
+    const supabaseAuth = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+    }
+
+    const authenticatedUserId = claimsData.claims.sub;
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -37,7 +57,18 @@ serve(async (req) => {
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) throw new Error('Supabase env not configured');
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const { messageId, content, userId, channelId } = await req.json();
+    const { messageId, content, channelId } = await req.json();
+
+    // Use the authenticated user's ID, not client-supplied userId
+    const userId = authenticatedUserId;
+
+    // Validate inputs
+    if (!messageId || typeof messageId !== 'string') {
+      return new Response(JSON.stringify({ error: 'Invalid messageId' }), { status: 400, headers: corsHeaders });
+    }
+    if (!content || typeof content !== 'string' || content.length > 4000) {
+      return new Response(JSON.stringify({ error: 'Invalid content' }), { status: 400, headers: corsHeaders });
+    }
 
     // Step 1: Basic word filter
     const wordCheck = containsSwearWords(content);
@@ -59,7 +90,7 @@ serve(async (req) => {
               role: 'system',
               content: 'You are a content moderation assistant. Analyze the message for: harassment, threats, hate speech, spam, scams, or suspicious activity. Respond with JSON: {"flagged": true/false, "reason": "brief explanation"}. Only flag genuinely harmful content.',
             },
-            { role: 'user', content: `Analyze this message: "${content}"` },
+            { role: 'user', content: `Analyze this message: "${content.substring(0, 1000)}"` },
           ],
           max_tokens: 150,
         }),
@@ -72,7 +103,7 @@ serve(async (req) => {
           const cleanJson = aiText.replace(/```json\n?/g, '').replace(/```/g, '').trim();
           const parsed = JSON.parse(cleanJson);
           aiFlag = parsed.flagged === true;
-          aiReason = parsed.reason || '';
+          aiReason = String(parsed.reason || '').substring(0, 500);
         } catch { /* ignore parse errors */ }
       }
     } catch (e) {
@@ -92,8 +123,8 @@ serve(async (req) => {
         channel_id: channelId,
         reported_user_id: userId,
         reporter_type: 'auto',
-        reason,
-        flagged_content: content,
+        reason: reason.substring(0, 1000),
+        flagged_content: content.substring(0, 4000),
       });
 
       // Get user profile
@@ -110,12 +141,11 @@ serve(async (req) => {
           body: JSON.stringify({
             from: 'SyncUp <onboarding@resend.dev>',
             to: 'anik080413@gmail.com',
-            subject: `⚠️ Content Flagged: ${reason.substring(0, 50)}`,
+            subject: `⚠️ Content Flagged`,
             html: `
               <h2>Content Moderation Alert</h2>
-              <p><strong>User:</strong> ${profile?.full_name || userId}</p>
-              <p><strong>Reason:</strong> ${reason}</p>
-              <p><strong>Message:</strong> ${content}</p>
+              <p><strong>User:</strong> ${String(profile?.full_name || 'Unknown').substring(0, 100)}</p>
+              <p><strong>Reason:</strong> ${reason.substring(0, 500)}</p>
               <p><strong>Time:</strong> ${new Date().toISOString()}</p>
             `,
           }),
@@ -128,7 +158,7 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('Moderation error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: 'Moderation failed' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

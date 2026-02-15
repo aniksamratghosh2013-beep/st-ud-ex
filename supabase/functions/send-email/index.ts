@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,10 +12,48 @@ serve(async (req) => {
   }
 
   try {
+    // Authenticate the caller
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+    }
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+    }
+
+    const userId = claimsData.claims.sub;
+
+    // Only super_admins can send arbitrary emails
+    const serviceClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+    const { data: isAdmin } = await serviceClient.rpc('is_super_admin', { _user_id: userId });
+    if (!isAdmin) {
+      return new Response(JSON.stringify({ error: 'Forbidden: super_admin required' }), { status: 403, headers: corsHeaders });
+    }
+
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
     if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY not configured');
 
     const { to, subject, html } = await req.json();
+
+    // Validate inputs
+    if (!subject || typeof subject !== 'string' || subject.length > 200) {
+      return new Response(JSON.stringify({ error: 'Invalid subject' }), { status: 400, headers: corsHeaders });
+    }
+    if (!html || typeof html !== 'string' || html.length > 50000) {
+      return new Response(JSON.stringify({ error: 'Invalid html content' }), { status: 400, headers: corsHeaders });
+    }
 
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -32,7 +71,7 @@ serve(async (req) => {
 
     const data = await res.json();
     if (!res.ok) {
-      throw new Error(`Resend API error [${res.status}]: ${JSON.stringify(data)}`);
+      throw new Error(`Resend API error: ${res.status}`);
     }
 
     return new Response(JSON.stringify({ success: true, data }), {
@@ -40,7 +79,7 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('Email error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: 'Failed to send email' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
