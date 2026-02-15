@@ -151,11 +151,16 @@ export default function DirectMessages() {
 
   const handleSend = async () => {
     if (!newMessage.trim() || !user || !selectedUser) return;
+    const trimmed = newMessage.trim();
+    if (trimmed.length > 4000) {
+      toast({ title: "Error", description: "Message too long (max 4000 characters)", variant: "destructive" });
+      return;
+    }
     setSending(true);
     const { error } = await (supabase as any).from("direct_messages").insert({
       sender_id: user.id,
       receiver_id: selectedUser,
-      content: newMessage.trim(),
+      content: trimmed,
     });
     setSending(false);
     if (error) {

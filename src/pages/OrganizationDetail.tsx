@@ -99,21 +99,23 @@ export default function OrganizationDetail() {
 
   const handleRoleChange = async (userId: string, newRole: Enums<"app_role">) => {
     if (!id) return;
+    // Verify membership before role assignment
+    const member = members.find(m => m.user_id === userId && m.status === 'approved');
+    if (!member) {
+      toast({ title: "Error", description: "User must be an approved member", variant: "destructive" });
+      return;
+    }
     const { error } = await supabase
       .from("user_roles")
-      .update({ role: newRole })
-      .eq("user_id", userId)
-      .eq("organization_id", id);
-
+      .upsert(
+        { user_id: userId, organization_id: id, role: newRole },
+        { onConflict: 'user_id,organization_id' }
+      );
     if (error) {
-      // Try insert if no existing role
-      await supabase.from("user_roles").insert({
-        user_id: userId,
-        organization_id: id,
-        role: newRole,
-      });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Role updated" });
     }
-    toast({ title: "Role updated" });
     fetchData();
   };
 
