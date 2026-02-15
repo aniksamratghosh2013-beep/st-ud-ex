@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Send, ArrowLeft, MessageSquare } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Tables } from "@/integrations/supabase/types";
+import { sanitizeError } from "@/lib/sanitize-error";
 
 interface DM {
   id: string;
@@ -164,7 +165,7 @@ export default function DirectMessages() {
     });
     setSending(false);
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: sanitizeError(error), variant: "destructive" });
     } else {
       setNewMessage("");
     }

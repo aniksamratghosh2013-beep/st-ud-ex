@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Send, Hash, Plus, MessageSquare } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Tables } from "@/integrations/supabase/types";
+import { sanitizeError } from "@/lib/sanitize-error";
 
 interface MessageWithProfile {
   id: string;
@@ -137,7 +138,7 @@ export default function Chat() {
     }).select().single();
     setSending(false);
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: sanitizeError(error), variant: "destructive" });
     } else {
       setNewMessage("");
       // Fire-and-forget: moderate message
@@ -165,7 +166,7 @@ export default function Chat() {
       created_by: user.id,
     });
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: sanitizeError(error), variant: "destructive" });
     } else {
       setNewChannelName("");
       const { data } = await supabase.from("chat_channels").select("*").eq("organization_id", selectedOrg).order("created_at");

@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Search, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { Tables } from "@/integrations/supabase/types";
+import { sanitizeError } from "@/lib/sanitize-error";
 
 export default function Organizations() {
   const { user } = useAuth();
@@ -68,7 +69,7 @@ export default function Organizations() {
     setCreating(false);
 
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: sanitizeError(error), variant: "destructive" });
     } else {
       toast({ title: "Organization created!" });
       setNewName("");
@@ -87,7 +88,7 @@ export default function Organizations() {
     });
 
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: sanitizeError(error), variant: "destructive" });
     } else {
       toast({ title: "Join request sent", description: "Waiting for admin approval." });
       fetchOrgs();

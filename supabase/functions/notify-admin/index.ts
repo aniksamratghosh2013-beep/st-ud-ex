@@ -35,11 +35,16 @@ serve(async (req) => {
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
     if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY not configured');
 
-    const { type, data } = await req.json();
+    const body = await req.json();
+    const { type, data } = body;
 
     // Validate input
-    if (!type || typeof type !== 'string') {
-      return new Response(JSON.stringify({ error: 'Invalid type' }), { status: 400, headers: corsHeaders });
+    const allowedTypes = ['chat_message', 'ban_request', 'activity'];
+    if (!type || typeof type !== 'string' || !allowedTypes.includes(type)) {
+      return new Response(JSON.stringify({ error: 'Invalid notification type' }), { status: 400, headers: corsHeaders });
+    }
+    if (data && typeof data !== 'object') {
+      return new Response(JSON.stringify({ error: 'Invalid data' }), { status: 400, headers: corsHeaders });
     }
 
     let subject = '';
