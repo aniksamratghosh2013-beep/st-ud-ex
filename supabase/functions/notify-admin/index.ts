@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-const ADMIN_EMAIL = 'anik080413@gmail.com';
+const ADMIN_EMAIL = Deno.env.get('ADMIN_EMAIL') || 'admin@example.com';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {

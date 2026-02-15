@@ -140,7 +140,7 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             from: 'SyncUp <onboarding@resend.dev>',
-            to: 'anik080413@gmail.com',
+            to: Deno.env.get('ADMIN_EMAIL') || 'admin@example.com',
             subject: `⚠️ Content Flagged`,
             html: `
               <h2>Content Moderation Alert</h2>
