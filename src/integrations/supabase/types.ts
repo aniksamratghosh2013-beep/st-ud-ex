@@ -14,6 +14,85 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          action_type: string
+          created_at: string
+          details: Json | null
+          id: string
+          organization_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          organization_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          organization_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bans: {
+        Row: {
+          banned_by: string
+          banned_org_id: string | null
+          banned_user_id: string | null
+          created_at: string
+          id: string
+          reason: string
+          reviewed_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          banned_by: string
+          banned_org_id?: string | null
+          banned_user_id?: string | null
+          created_at?: string
+          id?: string
+          reason: string
+          reviewed_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          banned_by?: string
+          banned_org_id?: string | null
+          banned_user_id?: string | null
+          created_at?: string
+          id?: string
+          reason?: string
+          reviewed_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bans_banned_org_id_fkey"
+            columns: ["banned_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_channels: {
         Row: {
           created_at: string
@@ -87,6 +166,108 @@ export type Database = {
           },
         ]
       }
+      direct_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          read: boolean
+          receiver_id: string
+          sender_id: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          receiver_id: string
+          sender_id: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          receiver_id?: string
+          sender_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      moderation_reports: {
+        Row: {
+          channel_id: string | null
+          created_at: string
+          flagged_content: string | null
+          id: string
+          message_id: string | null
+          reason: string
+          reported_user_id: string | null
+          reporter_type: string
+          status: string
+        }
+        Insert: {
+          channel_id?: string | null
+          created_at?: string
+          flagged_content?: string | null
+          id?: string
+          message_id?: string | null
+          reason: string
+          reported_user_id?: string | null
+          reporter_type?: string
+          status?: string
+        }
+        Update: {
+          channel_id?: string | null
+          created_at?: string
+          flagged_content?: string | null
+          id?: string
+          message_id?: string | null
+          reason?: string
+          reported_user_id?: string | null
+          reporter_type?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "moderation_reports_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "chat_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "moderation_reports_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_memberships: {
         Row: {
           created_at: string
@@ -124,30 +305,36 @@ export type Database = {
       }
       organizations: {
         Row: {
+          ban_reason: string | null
           created_at: string
           created_by: string
           description: string | null
           id: string
+          is_banned: boolean
           is_public: boolean | null
           logo_url: string | null
           name: string
           updated_at: string
         }
         Insert: {
+          ban_reason?: string | null
           created_at?: string
           created_by: string
           description?: string | null
           id?: string
+          is_banned?: boolean
           is_public?: boolean | null
           logo_url?: string | null
           name: string
           updated_at?: string
         }
         Update: {
+          ban_reason?: string | null
           created_at?: string
           created_by?: string
           description?: string | null
           id?: string
+          is_banned?: boolean
           is_public?: boolean | null
           logo_url?: string | null
           name?: string
@@ -158,11 +345,13 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          ban_reason: string | null
           bio: string | null
           created_at: string
           full_name: string | null
           id: string
           interests: string[] | null
+          is_banned: boolean
           online_status: string | null
           privacy_setting: Database["public"]["Enums"]["privacy_setting"] | null
           skills: string[] | null
@@ -170,11 +359,13 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          ban_reason?: string | null
           bio?: string | null
           created_at?: string
           full_name?: string | null
           id: string
           interests?: string[] | null
+          is_banned?: boolean
           online_status?: string | null
           privacy_setting?:
             | Database["public"]["Enums"]["privacy_setting"]
@@ -184,11 +375,13 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          ban_reason?: string | null
           bio?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
           interests?: string[] | null
+          is_banned?: boolean
           online_status?: string | null
           privacy_setting?:
             | Database["public"]["Enums"]["privacy_setting"]

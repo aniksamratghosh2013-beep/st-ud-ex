@@ -14,6 +14,8 @@ import Organizations from "./pages/Organizations";
 import OrganizationDetail from "./pages/OrganizationDetail";
 import Admin from "./pages/Admin";
 import Chat from "./pages/Chat";
+import People from "./pages/People";
+import DirectMessages from "./pages/DirectMessages";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,62 +31,15 @@ const App = () => (
             <Routes>
               <Route path="/auth" element={<Auth />} />
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <AppLayout><Dashboard /></AppLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <AppLayout><Profile /></AppLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/organizations"
-                element={
-                  <ProtectedRoute>
-                    <AppLayout><Organizations /></AppLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/organizations/:id"
-                element={
-                  <ProtectedRoute>
-                    <AppLayout><OrganizationDetail /></AppLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/chat"
-                element={
-                  <ProtectedRoute>
-                    <AppLayout><Chat /></AppLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin"
-                element={
-                  <ProtectedRoute>
-                    <AppLayout><Admin /></AppLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/members"
-                element={
-                  <ProtectedRoute>
-                    <AppLayout><Admin /></AppLayout>
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="/dashboard" element={<ProtectedRoute><AppLayout><Dashboard /></AppLayout></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><AppLayout><Profile /></AppLayout></ProtectedRoute>} />
+              <Route path="/organizations" element={<ProtectedRoute><AppLayout><Organizations /></AppLayout></ProtectedRoute>} />
+              <Route path="/organizations/:id" element={<ProtectedRoute><AppLayout><OrganizationDetail /></AppLayout></ProtectedRoute>} />
+              <Route path="/chat" element={<ProtectedRoute><AppLayout><Chat /></AppLayout></ProtectedRoute>} />
+              <Route path="/people" element={<ProtectedRoute><AppLayout><People /></AppLayout></ProtectedRoute>} />
+              <Route path="/messages" element={<ProtectedRoute><AppLayout><DirectMessages /></AppLayout></ProtectedRoute>} />
+              <Route path="/messages/:userId" element={<ProtectedRoute><AppLayout><DirectMessages /></AppLayout></ProtectedRoute>} />
+              <Route path="/admin" element={<ProtectedRoute><AppLayout><Admin /></AppLayout></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

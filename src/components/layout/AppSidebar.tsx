@@ -1,12 +1,11 @@
 import {
   LayoutDashboard,
-  Users,
   Building2,
   UserCircle,
-  Shield,
-  Settings,
   Zap,
   MessageSquare,
+  Users,
+  Settings,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -26,13 +25,10 @@ const mainNav = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Organizations", url: "/organizations", icon: Building2 },
   { title: "Chat", url: "/chat", icon: MessageSquare },
+  { title: "People", url: "/people", icon: Users },
   { title: "Profile", url: "/profile", icon: UserCircle },
 ];
 
-const adminNav = [
-  { title: "Admin", url: "/admin", icon: Shield },
-  { title: "Members", url: "/admin/members", icon: Users },
-];
 
 export function AppSidebar() {
   return (
@@ -71,27 +67,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Administration</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {adminNav.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild tooltip={item.title}>
-                    <NavLink
-                      to={item.url}
-                      className="hover:bg-sidebar-accent"
-                      activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                    >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter className="p-4 group-data-[collapsible=icon]:hidden">
