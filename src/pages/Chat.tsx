@@ -144,7 +144,11 @@ export default function Chat() {
       // Fire-and-forget: moderate message
       if (msgData) {
         supabase.functions.invoke("moderate-message", {
-          body: { messageId: msgData.id, content, userId: user.id, channelId: selectedChannel },
+          body: { messageId: msgData.id, content, channelId: selectedChannel, source: "chat" },
+        }).then(({ data }) => {
+          if (data?.banned) {
+            toast({ title: "Your account has been suspended", description: "Your content violated community guidelines.", variant: "destructive" });
+          }
         }).catch(console.error);
       }
       // Fire-and-forget: notify admin of chat activity

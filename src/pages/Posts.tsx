@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useHasOrganization } from "@/hooks/use-has-organization";
+import { JoinOrgPrompt } from "@/components/JoinOrgPrompt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -43,6 +45,7 @@ interface PostWithAuthor {
 export default function Posts() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const hasOrg = useHasOrganization();
   const [posts, setPosts] = useState<PostWithAuthor[]>([]);
   const [myOrgs, setMyOrgs] = useState<Tables<"organizations">[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,7 +127,7 @@ export default function Posts() {
       insertData.organization_id = postAs;
     }
 
-    const { error } = await supabase.from("posts").insert(insertData);
+    const { data: postData, error } = await supabase.from("posts").insert(insertData).select().single();
     setCreating(false);
 
     if (error) {
@@ -135,6 +138,21 @@ export default function Posts() {
       setContent("");
       setPostAs("personal");
       setDialogOpen(false);
+
+      // Fire-and-forget: moderate the post content
+      if (postData) {
+        supabase.functions.invoke("moderate-message", {
+          body: {
+            messageId: postData.id,
+            content: `${insertData.title} ${insertData.content}`,
+            source: "post",
+          },
+        }).then(({ data }) => {
+          if (data?.banned) {
+            toast({ title: "Your account has been suspended", description: "Your content violated community guidelines.", variant: "destructive" });
+          }
+        }).catch(console.error);
+      }
     }
   };
 
@@ -146,6 +164,10 @@ export default function Posts() {
       toast({ title: "Post deleted" });
     }
   };
+
+  if (hasOrg === false) {
+    return <JoinOrgPrompt feature="Posts" />;
+  }
 
   if (loading) {
     return (

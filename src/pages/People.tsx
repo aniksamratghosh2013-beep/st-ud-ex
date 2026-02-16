@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useHasOrganization } from "@/hooks/use-has-organization";
+import { JoinOrgPrompt } from "@/components/JoinOrgPrompt";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +22,7 @@ interface FollowRecord {
 export default function People() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const hasOrg = useHasOrganization();
   const navigate = useNavigate();
   const [profiles, setProfiles] = useState<Tables<"profiles">[]>([]);
   const [search, setSearch] = useState("");
@@ -88,6 +91,10 @@ export default function People() {
     (p.full_name?.toLowerCase().includes(search.toLowerCase()) ||
      p.bio?.toLowerCase().includes(search.toLowerCase()))
   );
+
+  if (hasOrg === false) {
+    return <JoinOrgPrompt feature="People" />;
+  }
 
   if (loading) {
     return <div className="flex items-center justify-center h-64">
