@@ -9,9 +9,19 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Check, X, UserMinus, Shield, Pencil, Camera, CalendarDays } from "lucide-react";
+import { Check, X, UserMinus, Shield, Pencil, Camera, CalendarDays, FileText, Clock } from "lucide-react";
 import type { Tables, Enums } from "@/integrations/supabase/types";
 import { sanitizeError } from "@/lib/sanitize-error";
+import { formatDistanceToNow } from "date-fns";
+
+interface PostWithAuthor {
+  id: string;
+  title: string;
+  content: string;
+  user_id: string;
+  created_at: string;
+  profile_name: string | null;
+}
 
 interface MemberWithProfile {
   id: string;
@@ -34,6 +44,7 @@ export default function OrganizationDetail() {
   const [loading, setLoading] = useState(true);
   const [editingBio, setEditingBio] = useState(false);
   const [bioText, setBioText] = useState("");
+  const [orgPosts, setOrgPosts] = useState<PostWithAuthor[]>([]);
 
   const canManage = isAdmin || isSuperAdmin;
 
@@ -76,6 +87,23 @@ export default function OrganizationDetail() {
       setIsAdmin(adminCheck === true);
       setIsSuperAdmin(superCheck === true);
       setIsFounder(orgData?.created_by === user.id);
+    }
+
+    // Fetch org posts
+    const { data: postsData } = await supabase
+      .from("posts")
+      .select("*")
+      .eq("organization_id", id)
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    if (postsData) {
+      const enriched: PostWithAuthor[] = [];
+      for (const p of postsData) {
+        const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", p.user_id).single();
+        enriched.push({ ...p, profile_name: profile?.full_name || null });
+      }
+      setOrgPosts(enriched);
     }
 
     setLoading(false);
@@ -311,6 +339,34 @@ export default function OrganizationDetail() {
           ))}
           {approvedMembers.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-4">No members yet.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Recently Posted */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Recently Posted
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {orgPosts.map((post) => (
+            <div key={post.id} className="p-3 rounded-lg border bg-muted/30">
+              <div className="flex items-start justify-between">
+                <h4 className="text-sm font-medium">{post.title}</h4>
+                <span className="text-xs text-muted-foreground flex items-center gap-1 shrink-0 ml-2">
+                  <Clock className="h-3 w-3" />
+                  {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{post.content}</p>
+              <p className="text-xs text-muted-foreground mt-1">by {post.profile_name || "Unknown"}</p>
+            </div>
+          ))}
+          {orgPosts.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-4">No posts yet.</p>
           )}
         </CardContent>
       </Card>
