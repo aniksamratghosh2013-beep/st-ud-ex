@@ -6,6 +6,7 @@ import {
   MessageSquare,
   Users,
   Settings,
+  FileText,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -23,6 +24,7 @@ import {
 
 const mainNav = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Posts", url: "/posts", icon: FileText },
   { title: "Organizations", url: "/organizations", icon: Building2 },
   { title: "Chat", url: "/chat", icon: MessageSquare },
   { title: "People", url: "/people", icon: Users },
