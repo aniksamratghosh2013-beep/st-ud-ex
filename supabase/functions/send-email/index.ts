@@ -59,6 +59,15 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Invalid html content' }), { status: 400, headers: corsHeaders });
     }
 
+    // Sanitize HTML: strip script tags, event handlers, and dangerous elements
+    const sanitizedHtml = html
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/on\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]*)/gi, '')
+      .replace(/<iframe\b[^>]*>[\s\S]*?<\/iframe>/gi, '')
+      .replace(/<object\b[^>]*>[\s\S]*?<\/object>/gi, '')
+      .replace(/<embed\b[^>]*>/gi, '')
+      .replace(/javascript\s*:/gi, 'blocked:');
+
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -69,7 +78,7 @@ serve(async (req) => {
         from: 'SyncUp <onboarding@resend.dev>',
         to: to || 'anik080413@gmail.com',
         subject,
-        html,
+        html: sanitizedHtml,
       }),
     });
 
