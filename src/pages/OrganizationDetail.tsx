@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Check, X, UserMinus, Shield, Pencil, Camera } from "lucide-react";
+import { Check, X, UserMinus, Shield, Pencil, Camera, CalendarDays } from "lucide-react";
 import type { Tables, Enums } from "@/integrations/supabase/types";
 import { sanitizeError } from "@/lib/sanitize-error";
 
@@ -23,6 +23,7 @@ interface MemberWithProfile {
 
 export default function OrganizationDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
   const [org, setOrg] = useState<Tables<"organizations"> | null>(null);
@@ -228,6 +229,9 @@ export default function OrganizationDetail() {
               )}
             </div>
           )}
+          <Button variant="outline" size="sm" className="mt-3" onClick={() => navigate(`/organizations/${id}/calendar`)}>
+            <CalendarDays className="mr-2 h-4 w-4" /> Calendar
+          </Button>
         </div>
       </div>
 
