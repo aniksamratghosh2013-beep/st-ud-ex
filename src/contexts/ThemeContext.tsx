@@ -59,6 +59,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     // Apply saved color scheme
     const savedScheme = localStorage.getItem("syncup-color-scheme") || "indigo";
     applySchemeToRoot(savedScheme, theme === "dark");
+
+    // Apply saved font size
+    const FONT_SCALES: Record<string, number> = { small: 0.875, default: 1, large: 1.125, xl: 1.25 };
+    const savedFontSize = localStorage.getItem("syncup-font-size") || "default";
+    root.style.fontSize = `${(FONT_SCALES[savedFontSize] || 1) * 16}px`;
+
+    // Apply saved border radius
+    const RADIUS_VALUES: Record<string, string> = { none: "0", sm: "0.375rem", md: "0.75rem", lg: "1rem", full: "1.5rem" };
+    const savedRadius = localStorage.getItem("syncup-radius") || "md";
+    root.style.setProperty("--radius", RADIUS_VALUES[savedRadius] || "0.75rem");
   }, [theme]);
 
   const toggleTheme = () => setTheme((t) => (t === "light" ? "dark" : "light"));
