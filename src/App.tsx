@@ -10,6 +10,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 import Organizations from "./pages/Organizations";
 import OrganizationDetail from "./pages/OrganizationDetail";
 import OrganizationCalendar from "./pages/OrganizationCalendar";
@@ -44,6 +45,7 @@ const App = () => (
               <Route path="/messages" element={<ProtectedRoute><AppLayout><DirectMessages /></AppLayout></ProtectedRoute>} />
               <Route path="/messages/:userId" element={<ProtectedRoute><AppLayout><DirectMessages /></AppLayout></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute><AppLayout><Admin /></AppLayout></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><AppLayout><Settings /></AppLayout></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
