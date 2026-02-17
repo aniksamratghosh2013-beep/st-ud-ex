@@ -59,14 +59,24 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Invalid html content' }), { status: 400, headers: corsHeaders });
     }
 
-    // Sanitize HTML: strip script tags, event handlers, and dangerous elements
+    // Sanitize HTML: allowlist approach - strip all tags except safe ones
     const sanitizedHtml = html
+      // Remove script/iframe/object/embed/form/style tags and contents
       .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/on\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]*)/gi, '')
+      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
       .replace(/<iframe\b[^>]*>[\s\S]*?<\/iframe>/gi, '')
       .replace(/<object\b[^>]*>[\s\S]*?<\/object>/gi, '')
-      .replace(/<embed\b[^>]*>/gi, '')
-      .replace(/javascript\s*:/gi, 'blocked:');
+      .replace(/<embed\b[^>]*\/?>/gi, '')
+      .replace(/<form\b[^>]*>[\s\S]*?<\/form>/gi, '')
+      .replace(/<link\b[^>]*\/?>/gi, '')
+      .replace(/<meta\b[^>]*\/?>/gi, '')
+      .replace(/<base\b[^>]*\/?>/gi, '')
+      // Remove all event handlers (on*)
+      .replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '')
+      // Remove javascript:, vbscript:, data: URIs in attributes
+      .replace(/(href|src|action|background|formaction|poster|data)\s*=\s*["']?\s*(javascript|vbscript|data)\s*:/gi, '$1="blocked:')
+      // Remove style attributes that could contain expressions
+      .replace(/style\s*=\s*("[^"]*expression[^"]*"|'[^']*expression[^']*')/gi, '');
 
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
