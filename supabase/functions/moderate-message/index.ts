@@ -60,7 +60,8 @@ serve(async (req) => {
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
-    const ADMIN_EMAIL = Deno.env.get('ADMIN_EMAIL') || 'anik0803413@gmail.com';
+    const ADMIN_EMAIL = Deno.env.get('ADMIN_EMAIL');
+    if (!ADMIN_EMAIL) throw new Error('ADMIN_EMAIL not configured');
 
     if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) throw new Error('Supabase env not configured');
@@ -179,19 +180,13 @@ Only flag genuinely harmful content.`,
 
       // Auto-ban for slurs or critical illegal activity (pending review)
       if (shouldAutoBan) {
-        // Create pending ban
+        // Create pending ban (user stays active until admin reviews)
         await supabase.from('bans').insert({
           banned_user_id: userId,
-          banned_by: userId, // auto-system
-          reason: `Auto-ban: ${reason}`.substring(0, 1000),
+          banned_by: '00000000-0000-0000-0000-000000000000', // system-generated
+          reason: `Auto-flagged: ${reason}`.substring(0, 1000),
           status: 'pending',
         });
-
-        // Mark user as banned
-        await supabase.from('profiles').update({
-          is_banned: true,
-          ban_reason: `Auto-banned for: ${slurCheck.found ? 'use of slurs' : 'illegal/critical content violation'}`.substring(0, 500),
-        }).eq('id', userId);
 
         // Send ban notification email
         if (RESEND_API_KEY) {
