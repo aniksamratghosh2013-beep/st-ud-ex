@@ -19,6 +19,9 @@ import Admin from "./pages/Admin";
 import Chat from "./pages/Chat";
 import People from "./pages/People";
 import DirectMessages from "./pages/DirectMessages";
+import Meetings from "./pages/Meetings";
+import VideoRoom from "./pages/VideoRoom";
+import VideoDrive from "./pages/VideoDrive";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +48,9 @@ const App = () => (
               <Route path="/messages" element={<ProtectedRoute><AppLayout><DirectMessages /></AppLayout></ProtectedRoute>} />
               <Route path="/messages/:userId" element={<ProtectedRoute><AppLayout><DirectMessages /></AppLayout></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute><AppLayout><Admin /></AppLayout></ProtectedRoute>} />
+              <Route path="/meetings" element={<ProtectedRoute><AppLayout><Meetings /></AppLayout></ProtectedRoute>} />
+              <Route path="/meeting/:roomName" element={<ProtectedRoute><AppLayout><VideoRoom /></AppLayout></ProtectedRoute>} />
+              <Route path="/video-drive" element={<ProtectedRoute><AppLayout><VideoDrive /></AppLayout></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><AppLayout><Settings /></AppLayout></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>

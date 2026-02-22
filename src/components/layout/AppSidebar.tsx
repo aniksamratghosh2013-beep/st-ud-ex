@@ -7,6 +7,8 @@ import {
   Users,
   Settings,
   FileText,
+  Video,
+  HardDrive,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -28,6 +30,8 @@ const mainNav = [
   { title: "Organizations", url: "/organizations", icon: Building2 },
   { title: "Chat", url: "/chat", icon: MessageSquare },
   { title: "People", url: "/people", icon: Users },
+  { title: "Meetings", url: "/meetings", icon: Video },
+  { title: "Video Drive", url: "/video-drive", icon: HardDrive },
   { title: "Profile", url: "/profile", icon: UserCircle },
 ];
 
