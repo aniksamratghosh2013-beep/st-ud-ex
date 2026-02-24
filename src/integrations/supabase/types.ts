@@ -133,6 +133,9 @@ export type Database = {
       }
       chat_messages: {
         Row: {
+          attachment_name: string | null
+          attachment_type: string | null
+          attachment_url: string | null
           channel_id: string
           content: string
           created_at: string
@@ -141,6 +144,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          attachment_name?: string | null
+          attachment_type?: string | null
+          attachment_url?: string | null
           channel_id: string
           content: string
           created_at?: string
@@ -149,6 +155,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          attachment_name?: string | null
+          attachment_type?: string | null
+          attachment_url?: string | null
           channel_id?: string
           content?: string
           created_at?: string
@@ -168,6 +177,9 @@ export type Database = {
       }
       direct_messages: {
         Row: {
+          attachment_name: string | null
+          attachment_type: string | null
+          attachment_url: string | null
           content: string
           created_at: string
           id: string
@@ -177,6 +189,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          attachment_name?: string | null
+          attachment_type?: string | null
+          attachment_url?: string | null
           content: string
           created_at?: string
           id?: string
@@ -186,6 +201,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          attachment_name?: string | null
+          attachment_type?: string | null
+          attachment_url?: string | null
           content?: string
           created_at?: string
           id?: string
@@ -479,6 +497,45 @@ export type Database = {
           {
             foreignKeyName: "organization_events_organization_id_fkey"
             columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_follows: {
+        Row: {
+          created_at: string
+          created_by: string
+          follower_org_id: string
+          following_org_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          follower_org_id: string
+          following_org_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          follower_org_id?: string
+          following_org_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_follows_follower_org_id_fkey"
+            columns: ["follower_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_follows_following_org_id_fkey"
+            columns: ["following_org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
