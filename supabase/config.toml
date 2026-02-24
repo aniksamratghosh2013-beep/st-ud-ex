@@ -8,6 +8,3 @@ verify_jwt = false
 
 [functions.notify-admin]
 verify_jwt = false
-
-[functions.livekit-token]
-verify_jwt = false
