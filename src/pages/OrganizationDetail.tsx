@@ -6,10 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Check, X, UserMinus, Shield, Pencil, Camera, CalendarDays, FileText, Clock } from "lucide-react";
+import { Check, X, UserMinus, Shield, Pencil, Camera, CalendarDays, FileText, Clock, Trash2, Edit } from "lucide-react";
 import type { Tables, Enums } from "@/integrations/supabase/types";
 import { sanitizeError } from "@/lib/sanitize-error";
 import { formatDistanceToNow } from "date-fns";
@@ -46,6 +50,12 @@ export default function OrganizationDetail() {
   const [bioText, setBioText] = useState("");
   const [orgPosts, setOrgPosts] = useState<PostWithAuthor[]>([]);
 
+  // Founder rename/delete state
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [newOrgName, setNewOrgName] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+
   const canManage = isAdmin || isSuperAdmin;
 
   const fetchData = async () => {
@@ -54,6 +64,7 @@ export default function OrganizationDetail() {
     const { data: orgData } = await supabase.from("organizations").select("*").eq("id", id).single();
     setOrg(orgData);
     setBioText(orgData?.description || "");
+    setNewOrgName(orgData?.name || "");
 
     const { data: memberships } = await supabase
       .from("organization_memberships")
@@ -89,7 +100,6 @@ export default function OrganizationDetail() {
       setIsFounder(orgData?.created_by === user.id);
     }
 
-    // Fetch org posts
     const { data: postsData } = await supabase
       .from("posts")
       .select("*")
@@ -199,6 +209,36 @@ export default function OrganizationDetail() {
     }
   };
 
+  const handleRename = async () => {
+    if (!id || !newOrgName.trim()) return;
+    const { error } = await supabase.from("organizations").update({ name: newOrgName.trim() }).eq("id", id);
+    if (error) {
+      toast({ title: "Error", description: sanitizeError(error), variant: "destructive" });
+    } else {
+      toast({ title: "Organization renamed" });
+      setRenameOpen(false);
+      fetchData();
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!id || deleteConfirm !== org?.name) return;
+    // Delete related data first
+    await supabase.from("user_roles").delete().eq("organization_id", id);
+    await supabase.from("organization_memberships").delete().eq("organization_id", id);
+    await supabase.from("organization_follows").delete().or(`follower_org_id.eq.${id},following_org_id.eq.${id}`);
+    await supabase.from("chat_channels").delete().eq("organization_id", id);
+    await supabase.from("posts").delete().eq("organization_id", id);
+    await supabase.from("organization_events").delete().eq("organization_id", id);
+    const { error } = await supabase.from("organizations").delete().eq("id", id);
+    if (error) {
+      toast({ title: "Error", description: sanitizeError(error), variant: "destructive" });
+    } else {
+      toast({ title: "Organization deleted" });
+      navigate("/organizations");
+    }
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center h-64">
       <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -233,8 +273,78 @@ export default function OrganizationDetail() {
         </div>
         <div className="flex-1">
           <h1 className="text-3xl font-bold font-[family-name:var(--font-heading)]">{org.name}</h1>
+          <div className="flex items-center gap-2 mt-3">
+            <Button variant="outline" size="sm" onClick={() => navigate(`/organizations/${id}/calendar`)}>
+              <CalendarDays className="mr-2 h-4 w-4" /> Calendar
+            </Button>
+            {isFounder && (
+              <>
+                <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Edit className="mr-2 h-4 w-4" /> Rename
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Rename Organization</DialogTitle>
+                      <DialogDescription>Enter a new name for your organization.</DialogDescription>
+                    </DialogHeader>
+                    <Input value={newOrgName} onChange={(e) => setNewOrgName(e.target.value)} placeholder="New name" />
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setRenameOpen(false)}>Cancel</Button>
+                      <Button onClick={handleRename} disabled={!newOrgName.trim()}>Save</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+
+                <Dialog open={deleteOpen} onOpenChange={(open) => { setDeleteOpen(open); setDeleteConfirm(""); }}>
+                  <DialogTrigger asChild>
+                    <Button variant="destructive" size="sm">
+                      <Trash2 className="mr-2 h-4 w-4" /> Delete
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Delete Organization</DialogTitle>
+                      <DialogDescription>
+                        This action is permanent. Type <strong>{org.name}</strong> to confirm.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <Input
+                      value={deleteConfirm}
+                      onChange={(e) => setDeleteConfirm(e.target.value)}
+                      placeholder={`Type "${org.name}" to confirm`}
+                    />
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
+                      <Button variant="destructive" onClick={handleDelete} disabled={deleteConfirm !== org.name}>
+                        Delete Forever
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Bio — standalone section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>About</span>
+            {canEditBio && !editingBio && (
+              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingBio(true)}>
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
           {editingBio ? (
-            <div className="mt-2 space-y-2">
+            <div className="space-y-2">
               <Textarea
                 value={bioText}
                 onChange={(e) => setBioText(e.target.value)}
@@ -248,20 +358,10 @@ export default function OrganizationDetail() {
               </div>
             </div>
           ) : (
-            <div className="flex items-start gap-2 mt-1">
-              <p className="text-muted-foreground whitespace-pre-wrap">{org.description || "No description"}</p>
-              {canEditBio && (
-                <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={() => setEditingBio(true)}>
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
-              )}
-            </div>
+            <p className="text-muted-foreground whitespace-pre-wrap">{org.description || "No description yet."}</p>
           )}
-          <Button variant="outline" size="sm" className="mt-3" onClick={() => navigate(`/organizations/${id}/calendar`)}>
-            <CalendarDays className="mr-2 h-4 w-4" /> Calendar
-          </Button>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Pending Requests */}
       {canManage && pendingMembers.length > 0 && (

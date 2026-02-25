@@ -12,6 +12,7 @@ import { Send, Hash, Plus, MessageSquare } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Tables } from "@/integrations/supabase/types";
 import { sanitizeError } from "@/lib/sanitize-error";
+import { FileAttachmentButton, AttachmentPreview } from "@/components/chat/FileAttachment";
 
 interface MessageWithProfile {
   id: string;
@@ -19,6 +20,9 @@ interface MessageWithProfile {
   created_at: string;
   user_id: string;
   channel_id: string;
+  attachment_url?: string | null;
+  attachment_name?: string | null;
+  attachment_type?: string | null;
   profile: Tables<"profiles"> | null;
 }
 
@@ -33,6 +37,7 @@ export default function Chat() {
   const [newMessage, setNewMessage] = useState("");
   const [newChannelName, setNewChannelName] = useState("");
   const [sending, setSending] = useState(false);
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Fetch user's orgs
@@ -123,24 +128,48 @@ export default function Chat() {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const uploadAttachment = async (file: File): Promise<{ url: string; name: string; type: string } | null> => {
+    const filePath = `chat/${user!.id}/${Date.now()}-${file.name}`;
+    const { error } = await supabase.storage.from("chat-attachments").upload(filePath, file);
+    if (error) {
+      toast({ title: "Upload failed", description: sanitizeError(error), variant: "destructive" });
+      return null;
+    }
+    const { data: urlData } = supabase.storage.from("chat-attachments").getPublicUrl(filePath);
+    return { url: urlData.publicUrl, name: file.name, type: file.type };
+  };
+
+  const currentChannel = channels.find((c) => c.id === selectedChannel);
+
   const handleSend = async () => {
-    if (!newMessage.trim() || !user || !selectedChannel) return;
-    const content = newMessage.trim();
+    if ((!newMessage.trim() && !attachedFile) || !user || !selectedChannel) return;
+    const content = newMessage.trim() || (attachedFile ? `📎 ${attachedFile.name}` : "");
     if (content.length > 4000) {
       toast({ title: "Error", description: "Message too long (max 4000 characters)", variant: "destructive" });
       return;
     }
     setSending(true);
+
+    let attachment: { url: string; name: string; type: string } | null = null;
+    if (attachedFile) {
+      attachment = await uploadAttachment(attachedFile);
+      if (!attachment) { setSending(false); return; }
+    }
+
     const { data: msgData, error } = await supabase.from("chat_messages").insert({
       channel_id: selectedChannel,
       user_id: user.id,
       content,
+      attachment_url: attachment?.url || null,
+      attachment_name: attachment?.name || null,
+      attachment_type: attachment?.type || null,
     }).select().single();
     setSending(false);
     if (error) {
       toast({ title: "Error", description: sanitizeError(error), variant: "destructive" });
     } else {
       setNewMessage("");
+      setAttachedFile(null);
       // Fire-and-forget: moderate message
       if (msgData) {
         supabase.functions.invoke("moderate-message", {
@@ -151,7 +180,7 @@ export default function Chat() {
           }
         }).catch(console.error);
       }
-      // Fire-and-forget: notify admin of chat activity
+      // Fire-and-forget: notify admin
       const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single();
       supabase.functions.invoke("notify-admin", {
         body: {
@@ -177,8 +206,6 @@ export default function Chat() {
       setChannels(data || []);
     }
   };
-
-  const currentChannel = channels.find((c) => c.id === selectedChannel);
 
   if (!orgs.length) {
     return (
@@ -272,6 +299,9 @@ export default function Chat() {
                           </span>
                         </div>
                         <p className="text-sm break-words">{msg.content}</p>
+                        {msg.attachment_url && (
+                          <AttachmentPreview url={msg.attachment_url} name={msg.attachment_name || "file"} type={msg.attachment_type || ""} />
+                        )}
                       </div>
                     </motion.div>
                   ))}
@@ -283,15 +313,16 @@ export default function Chat() {
             <div className="p-4 border-t">
               <form
                 onSubmit={(e) => { e.preventDefault(); handleSend(); }}
-                className="flex gap-2"
+                className="flex items-center gap-2"
               >
+                <FileAttachmentButton file={attachedFile} onFileSelect={setAttachedFile} disabled={sending} />
                 <Input
                   placeholder={`Message #${currentChannel?.name || ""}...`}
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   className="flex-1"
                 />
-                <Button type="submit" size="icon" disabled={sending || !newMessage.trim()}>
+                <Button type="submit" size="icon" disabled={sending || (!newMessage.trim() && !attachedFile)}>
                   <Send className="h-4 w-4" />
                 </Button>
               </form>
