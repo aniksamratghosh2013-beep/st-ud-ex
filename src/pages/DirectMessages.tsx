@@ -13,6 +13,7 @@ import { Send, ArrowLeft, MessageSquare } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Tables } from "@/integrations/supabase/types";
 import { sanitizeError } from "@/lib/sanitize-error";
+import { FileAttachmentButton, AttachmentPreview } from "@/components/chat/FileAttachment";
 
 interface DM {
   id: string;
@@ -21,6 +22,9 @@ interface DM {
   content: string;
   read: boolean;
   created_at: string;
+  attachment_url?: string | null;
+  attachment_name?: string | null;
+  attachment_type?: string | null;
 }
 
 interface ConversationPartner {
@@ -43,6 +47,7 @@ export default function DirectMessages() {
   const [messages, setMessages] = useState<DM[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Fetch conversations list
@@ -150,24 +155,60 @@ export default function DirectMessages() {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const uploadAttachment = async (file: File): Promise<{ url: string; name: string; type: string } | null> => {
+    const filePath = `dm/${user!.id}/${Date.now()}-${file.name}`;
+    const { error } = await supabase.storage.from("chat-attachments").upload(filePath, file);
+    if (error) {
+      toast({ title: "Upload failed", description: sanitizeError(error), variant: "destructive" });
+      return null;
+    }
+    const { data: urlData } = supabase.storage.from("chat-attachments").getPublicUrl(filePath);
+    return { url: urlData.publicUrl, name: file.name, type: file.type };
+  };
+
   const handleSend = async () => {
-    if (!newMessage.trim() || !user || !selectedUser) return;
-    const trimmed = newMessage.trim();
+    if ((!newMessage.trim() && !attachedFile) || !user || !selectedUser) return;
+    const trimmed = newMessage.trim() || (attachedFile ? `📎 ${attachedFile.name}` : "");
     if (trimmed.length > 4000) {
       toast({ title: "Error", description: "Message too long (max 4000 characters)", variant: "destructive" });
       return;
     }
     setSending(true);
+
+    let attachment: { url: string; name: string; type: string } | null = null;
+    if (attachedFile) {
+      attachment = await uploadAttachment(attachedFile);
+      if (!attachment) { setSending(false); return; }
+    }
+
     const { error } = await (supabase as any).from("direct_messages").insert({
       sender_id: user.id,
       receiver_id: selectedUser,
       content: trimmed,
+      attachment_url: attachment?.url || null,
+      attachment_name: attachment?.name || null,
+      attachment_type: attachment?.type || null,
     });
     setSending(false);
     if (error) {
       toast({ title: "Error", description: sanitizeError(error), variant: "destructive" });
     } else {
       setNewMessage("");
+      setAttachedFile(null);
+
+      // Fire-and-forget: send email notification to recipient
+      const { data: senderProfile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single();
+      supabase.functions.invoke("notify-user", {
+        body: {
+          recipientId: selectedUser,
+          recipientName: selectedProfile?.full_name || "User",
+          type: "new_dm",
+          data: {
+            senderName: senderProfile?.full_name || "Someone",
+            content: trimmed.substring(0, 200),
+          },
+        },
+      }).catch(console.error);
     }
   };
 
@@ -240,6 +281,9 @@ export default function DirectMessages() {
                           : "bg-muted"
                       }`}>
                         <p className="break-words">{msg.content}</p>
+                        {msg.attachment_url && (
+                          <AttachmentPreview url={msg.attachment_url} name={msg.attachment_name || "file"} type={msg.attachment_type || ""} />
+                        )}
                         <span className="text-[10px] opacity-70 mt-1 block">
                           {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                         </span>
@@ -252,14 +296,15 @@ export default function DirectMessages() {
             </ScrollArea>
 
             <div className="p-4 border-t">
-              <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex gap-2">
+              <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex items-center gap-2">
+                <FileAttachmentButton file={attachedFile} onFileSelect={setAttachedFile} disabled={sending} />
                 <Input
                   placeholder={`Message ${selectedProfile.full_name || ""}...`}
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   className="flex-1"
                 />
-                <Button type="submit" size="icon" disabled={sending || !newMessage.trim()}>
+                <Button type="submit" size="icon" disabled={sending || (!newMessage.trim() && !attachedFile)}>
                   <Send className="h-4 w-4" />
                 </Button>
               </form>

@@ -17,6 +17,13 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
     }
 
+    // Use service role to look up recipient email
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    // Verify calling user
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY')!,
@@ -31,10 +38,22 @@ serve(async (req) => {
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
     if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY not configured');
 
-    const { recipientEmail, recipientName, type, data } = await req.json();
+    const { recipientEmail: providedEmail, recipientId, recipientName, type, data } = await req.json();
+
+    // Resolve recipient email: use provided or look up by recipientId
+    let recipientEmail = providedEmail;
+    if (!recipientEmail && recipientId) {
+      const { data: recipientUser } = await supabaseAdmin.auth.admin.getUserById(recipientId);
+      recipientEmail = recipientUser?.user?.email;
+    }
+    // If still no email and we have data about a receiver, try looking up from the DM context
+    if (!recipientEmail && data?.receiverId) {
+      const { data: recipientUser } = await supabaseAdmin.auth.admin.getUserById(data.receiverId);
+      recipientEmail = recipientUser?.user?.email;
+    }
 
     if (!recipientEmail || typeof recipientEmail !== 'string') {
-      return new Response(JSON.stringify({ error: 'Invalid recipient email' }), { status: 400, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: 'Could not resolve recipient email' }), { status: 400, headers: corsHeaders });
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
