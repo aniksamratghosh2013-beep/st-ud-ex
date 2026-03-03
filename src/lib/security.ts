@@ -51,11 +51,9 @@ export function injectCSPMeta(): void {
   document.head.appendChild(meta);
 }
 
-// 8. Clickjacking Protection
+// 8. Clickjacking Protection (disabled — Lovable apps run in iframes)
 export function injectFrameGuard(): void {
-  if (window.self !== window.top) {
-    document.body.innerHTML = "<h1>Framing not allowed</h1>";
-  }
+  // No-op: x-frame-options is not applicable for iframe-hosted apps
 }
 
 // 9. Session Integrity Check
