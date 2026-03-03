@@ -21,6 +21,15 @@ const SWEAR_WORDS = [
   'piss', 'slut', 'whore', 'cock',
 ];
 
+function escapeHtml(str: string): string {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
 function checkWordList(text: string, wordList: string[]): { found: boolean; words: string[] } {
   const lower = text.toLowerCase();
   const found = wordList.filter(w => {
