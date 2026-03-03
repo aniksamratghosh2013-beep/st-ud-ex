@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, Users, Activity, MessageSquare } from "lucide-react";
+import { Building2, Users, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
+import TrendingOrganizations from "@/components/dashboard/TrendingOrganizations";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -77,6 +78,8 @@ export default function Dashboard() {
           </motion.div>
         ))}
       </div>
+
+      <TrendingOrganizations />
     </div>
   );
 }
