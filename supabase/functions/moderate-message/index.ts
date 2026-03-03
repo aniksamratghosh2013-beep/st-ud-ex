@@ -21,6 +21,15 @@ const SWEAR_WORDS = [
   'piss', 'slut', 'whore', 'cock',
 ];
 
+function escapeHtml(str: string): string {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
 function checkWordList(text: string, wordList: string[]): { found: boolean; words: string[] } {
   const lower = text.toLowerCase();
   const found = wordList.filter(w => {
@@ -199,13 +208,13 @@ Only flag genuinely harmful content.`,
             body: JSON.stringify({
               from: 'SyncUp <onboarding@resend.dev>',
               to: ADMIN_EMAIL,
-              subject: `🚨 AUTO-BAN: ${String(profile?.full_name || 'Unknown').substring(0, 50)}`,
+              subject: `🚨 AUTO-BAN: ${escapeHtml(profile?.full_name || 'Unknown').substring(0, 50)}`,
               html: `
                 <h2>Automatic Ban Applied (Pending Review)</h2>
-                <p><strong>User:</strong> ${String(profile?.full_name || 'Unknown').substring(0, 100)}</p>
-                <p><strong>Source:</strong> ${String(source || 'unknown').substring(0, 50)}</p>
-                <p><strong>Reason:</strong> ${reason.substring(0, 500)}</p>
-                <p><strong>Content:</strong> ${content.substring(0, 300).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
+                <p><strong>User:</strong> ${escapeHtml(profile?.full_name || 'Unknown').substring(0, 100)}</p>
+                <p><strong>Source:</strong> ${escapeHtml(source || 'unknown').substring(0, 50)}</p>
+                <p><strong>Reason:</strong> ${escapeHtml(reason).substring(0, 500)}</p>
+                <p><strong>Content:</strong> ${escapeHtml(content).substring(0, 300)}</p>
                 <p><strong>Time:</strong> ${new Date().toISOString()}</p>
                 <p>Please review this ban in the Admin Dashboard.</p>
               `,
@@ -224,13 +233,13 @@ Only flag genuinely harmful content.`,
             body: JSON.stringify({
               from: 'SyncUp <onboarding@resend.dev>',
               to: ADMIN_EMAIL,
-              subject: `⚠️ Content Flagged [${String(source || 'unknown').substring(0, 20)}]`,
+              subject: `⚠️ Content Flagged [${escapeHtml(source || 'unknown').substring(0, 20)}]`,
               html: `
                 <h2>Content Moderation Alert</h2>
-                <p><strong>User:</strong> ${String(profile?.full_name || 'Unknown').substring(0, 100)}</p>
-                <p><strong>Source:</strong> ${String(source || 'unknown').substring(0, 50)}</p>
-                <p><strong>Category:</strong> ${aiCategory || 'profanity'}</p>
-                <p><strong>Reason:</strong> ${reason.substring(0, 500)}</p>
+                <p><strong>User:</strong> ${escapeHtml(profile?.full_name || 'Unknown').substring(0, 100)}</p>
+                <p><strong>Source:</strong> ${escapeHtml(source || 'unknown').substring(0, 50)}</p>
+                <p><strong>Category:</strong> ${escapeHtml(aiCategory || 'profanity')}</p>
+                <p><strong>Reason:</strong> ${escapeHtml(reason).substring(0, 500)}</p>
                 <p><strong>Time:</strong> ${new Date().toISOString()}</p>
               `,
             }),

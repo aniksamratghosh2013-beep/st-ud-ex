@@ -6,6 +6,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+function escapeHtml(str: string): string {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -66,13 +75,13 @@ serve(async (req) => {
 
     switch (type) {
       case 'new_message':
-        subject = `💬 New message from ${String(data?.senderName || 'Someone').substring(0, 50)}`;
+        subject = `💬 New message from ${escapeHtml(data?.senderName || 'Someone').substring(0, 50)}`;
         html = `
           <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto;">
             <h2 style="color: #333;">New Message on SyncUp</h2>
-            <p><strong>${String(data?.senderName || 'Someone').substring(0, 100)}</strong> sent you a message${data?.channelName ? ` in <strong>#${String(data.channelName).substring(0, 100)}</strong>` : ''}:</p>
+            <p><strong>${escapeHtml(data?.senderName || 'Someone').substring(0, 100)}</strong> sent you a message${data?.channelName ? ` in <strong>#${escapeHtml(data.channelName).substring(0, 100)}</strong>` : ''}:</p>
             <div style="background: #f5f5f5; padding: 12px; border-radius: 8px; margin: 16px 0;">
-              <p style="margin: 0; color: #555;">${String(data?.content || '').substring(0, 500)}</p>
+              <p style="margin: 0; color: #555;">${escapeHtml(data?.content || '').substring(0, 500)}</p>
             </div>
             <p style="color: #888; font-size: 12px;">This email was sent because you have notifications enabled on SyncUp.</p>
           </div>
@@ -80,13 +89,13 @@ serve(async (req) => {
         break;
 
       case 'new_dm':
-        subject = `✉️ Direct message from ${String(data?.senderName || 'Someone').substring(0, 50)}`;
+        subject = `✉️ Direct message from ${escapeHtml(data?.senderName || 'Someone').substring(0, 50)}`;
         html = `
           <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto;">
             <h2 style="color: #333;">New Direct Message</h2>
-            <p><strong>${String(data?.senderName || 'Someone').substring(0, 100)}</strong> sent you a direct message:</p>
+            <p><strong>${escapeHtml(data?.senderName || 'Someone').substring(0, 100)}</strong> sent you a direct message:</p>
             <div style="background: #f5f5f5; padding: 12px; border-radius: 8px; margin: 16px 0;">
-              <p style="margin: 0; color: #555;">${String(data?.content || '').substring(0, 500)}</p>
+              <p style="margin: 0; color: #555;">${escapeHtml(data?.content || '').substring(0, 500)}</p>
             </div>
             <p style="color: #888; font-size: 12px;">This email was sent because you have notifications enabled on SyncUp.</p>
           </div>
@@ -94,13 +103,13 @@ serve(async (req) => {
         break;
 
       case 'mention':
-        subject = `🔔 You were mentioned by ${String(data?.senderName || 'Someone').substring(0, 50)}`;
+        subject = `🔔 You were mentioned by ${escapeHtml(data?.senderName || 'Someone').substring(0, 50)}`;
         html = `
           <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto;">
             <h2 style="color: #333;">You Were Mentioned</h2>
-            <p><strong>${String(data?.senderName || 'Someone').substring(0, 100)}</strong> mentioned you in a message:</p>
+            <p><strong>${escapeHtml(data?.senderName || 'Someone').substring(0, 100)}</strong> mentioned you in a message:</p>
             <div style="background: #f5f5f5; padding: 12px; border-radius: 8px; margin: 16px 0;">
-              <p style="margin: 0; color: #555;">${String(data?.content || '').substring(0, 500)}</p>
+              <p style="margin: 0; color: #555;">${escapeHtml(data?.content || '').substring(0, 500)}</p>
             </div>
           </div>
         `;
