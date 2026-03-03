@@ -6,6 +6,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+function escapeHtml(str: string): string {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
 const ADMIN_EMAIL = Deno.env.get('ADMIN_EMAIL') || 'admin@example.com';
 
 serve(async (req) => {
@@ -51,33 +60,33 @@ serve(async (req) => {
 
     switch (type) {
       case 'chat_message':
-        subject = `💬 New Chat: ${String(data?.userName || 'Unknown').substring(0, 50)}`;
+        subject = `💬 New Chat: ${escapeHtml(data?.userName || 'Unknown').substring(0, 50)}`;
         html = `
           <h2>New Chat Message</h2>
-          <p><strong>User:</strong> ${String(data?.userName || '').substring(0, 100)}</p>
-          <p><strong>Channel:</strong> ${String(data?.channelName || '').substring(0, 100)}</p>
-          <p><strong>Message:</strong> ${String(data?.content || '').substring(0, 500)}</p>
+          <p><strong>User:</strong> ${escapeHtml(data?.userName || '').substring(0, 100)}</p>
+          <p><strong>Channel:</strong> ${escapeHtml(data?.channelName || '').substring(0, 100)}</p>
+          <p><strong>Message:</strong> ${escapeHtml(data?.content || '').substring(0, 500)}</p>
           <p><strong>Time:</strong> ${new Date().toISOString()}</p>
         `;
         break;
 
       case 'ban_request':
-        subject = `🚫 Ban Request: ${String(data?.targetName || '').substring(0, 50)}`;
+        subject = `🚫 Ban Request: ${escapeHtml(data?.targetName || '').substring(0, 50)}`;
         html = `
           <h2>Ban Request for Review</h2>
-          <p><strong>Target:</strong> ${String(data?.targetName || '')} (${String(data?.targetType || '')})</p>
-          <p><strong>Banned by:</strong> ${String(data?.bannedByName || '')}</p>
-          <p><strong>Reason:</strong> ${String(data?.reason || '').substring(0, 500)}</p>
+          <p><strong>Target:</strong> ${escapeHtml(data?.targetName || '')} (${escapeHtml(data?.targetType || '')})</p>
+          <p><strong>Banned by:</strong> ${escapeHtml(data?.bannedByName || '')}</p>
+          <p><strong>Reason:</strong> ${escapeHtml(data?.reason || '').substring(0, 500)}</p>
           <p>Review this ban in the Admin Dashboard.</p>
         `;
         break;
 
       case 'activity':
-        subject = `📋 Activity: ${String(data?.actionType || '').substring(0, 50)}`;
+        subject = `📋 Activity: ${escapeHtml(data?.actionType || '').substring(0, 50)}`;
         html = `
           <h2>User Activity Report</h2>
-          <p><strong>User:</strong> ${String(data?.userName || '')}</p>
-          <p><strong>Action:</strong> ${String(data?.actionType || '')}</p>
+          <p><strong>User:</strong> ${escapeHtml(data?.userName || '')}</p>
+          <p><strong>Action:</strong> ${escapeHtml(data?.actionType || '')}</p>
           <p><strong>Time:</strong> ${new Date().toISOString()}</p>
         `;
         break;
