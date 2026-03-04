@@ -92,7 +92,7 @@ serve(async (req) => {
         break;
 
       default:
-        subject = `SyncUp Notification`;
+        subject = `Synedify Notification`;
         html = `<p>Notification received</p>`;
     }
 
@@ -103,7 +103,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'SyncUp <onboarding@resend.dev>',
+        from: 'Synedify <onboarding@resend.dev>',
         to: ADMIN_EMAIL,
         subject,
         html,

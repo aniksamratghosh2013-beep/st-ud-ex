@@ -78,12 +78,12 @@ serve(async (req) => {
         subject = `💬 New message from ${escapeHtml(data?.senderName || 'Someone').substring(0, 50)}`;
         html = `
           <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto;">
-            <h2 style="color: #333;">New Message on SyncUp</h2>
+            <h2 style="color: #333;">New Message on Synedify</h2>
             <p><strong>${escapeHtml(data?.senderName || 'Someone').substring(0, 100)}</strong> sent you a message${data?.channelName ? ` in <strong>#${escapeHtml(data.channelName).substring(0, 100)}</strong>` : ''}:</p>
             <div style="background: #f5f5f5; padding: 12px; border-radius: 8px; margin: 16px 0;">
               <p style="margin: 0; color: #555;">${escapeHtml(data?.content || '').substring(0, 500)}</p>
             </div>
-            <p style="color: #888; font-size: 12px;">This email was sent because you have notifications enabled on SyncUp.</p>
+            <p style="color: #888; font-size: 12px;">This email was sent because you have notifications enabled on Synedify.</p>
           </div>
         `;
         break;
@@ -97,7 +97,7 @@ serve(async (req) => {
             <div style="background: #f5f5f5; padding: 12px; border-radius: 8px; margin: 16px 0;">
               <p style="margin: 0; color: #555;">${escapeHtml(data?.content || '').substring(0, 500)}</p>
             </div>
-            <p style="color: #888; font-size: 12px;">This email was sent because you have notifications enabled on SyncUp.</p>
+            <p style="color: #888; font-size: 12px;">This email was sent because you have notifications enabled on Synedify.</p>
           </div>
         `;
         break;
@@ -116,8 +116,8 @@ serve(async (req) => {
         break;
 
       default:
-        subject = `🔔 SyncUp Notification`;
-        html = `<p>You have a new notification on SyncUp.</p>`;
+        subject = `🔔 Synedify Notification`;
+        html = `<p>You have a new notification on Synedify.</p>`;
     }
 
     const res = await fetch('https://api.resend.com/emails', {
@@ -127,7 +127,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'SyncUp <onboarding@resend.dev>',
+        from: 'Synedify <onboarding@resend.dev>',
         to: recipientEmail,
         subject,
         html,

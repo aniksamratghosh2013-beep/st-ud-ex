@@ -52,7 +52,7 @@ export const LoginForm = forwardRef<HTMLDivElement, Props>(({ onSwitch }, ref) =
     <Card ref={ref} className="border-0 shadow-lg">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl font-[family-name:var(--font-heading)]">Welcome back</CardTitle>
-        <CardDescription>Sign in to your SyncUp account</CardDescription>
+        <CardDescription>Sign in to your Synedify account</CardDescription>
       </CardHeader>
       <CardContent>
         {error && (

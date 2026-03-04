@@ -60,7 +60,7 @@ export const SignupForm = forwardRef<HTMLDivElement, Props>(({ onSwitch }, ref) 
     <Card ref={ref} className="border-0 shadow-lg">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl font-[family-name:var(--font-heading)]">Create account</CardTitle>
-        <CardDescription>Join SyncUp to start collaborating</CardDescription>
+        <CardDescription>Join Synedify to start collaborating</CardDescription>
       </CardHeader>
       <CardContent>
         {error && (

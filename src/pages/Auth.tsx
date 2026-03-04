@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap } from "lucide-react";
+import synedifyLogo from "@/assets/synedify-logo.png";
 import { useAuth } from "@/contexts/AuthContext";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { SignupForm } from "@/components/auth/SignupForm";
@@ -33,11 +33,9 @@ export default function Auth() {
           <div className="absolute bottom-20 right-20 h-96 w-96 rounded-full bg-primary-foreground blur-3xl" />
         </div>
         <div className="relative z-10 text-center px-12">
-          <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-primary-foreground/20 mb-6">
-            <Zap className="h-8 w-8 text-primary-foreground" />
-          </div>
+         <img src={synedifyLogo} alt="Synedify logo" className="h-20 w-20 rounded-2xl mb-6" />
           <h1 className="text-4xl font-bold text-primary-foreground font-[family-name:var(--font-heading)] mb-4">
-            SyncUp
+            Synedify
           </h1>
           <p className="text-lg text-primary-foreground/80 max-w-md">
             The collaboration platform for teams, clubs, and communities. Connect, organize, and thrive together.
@@ -49,10 +47,8 @@ export default function Auth() {
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
           <div className="lg:hidden flex items-center gap-2 mb-8 justify-center">
-            <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center">
-              <Zap className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="text-2xl font-bold font-[family-name:var(--font-heading)]">SyncUp</span>
+            <img src={synedifyLogo} alt="Synedify logo" className="h-10 w-10 rounded-xl" />
+            <span className="text-2xl font-bold font-[family-name:var(--font-heading)]">Synedify</span>
           </div>
 
           <AnimatePresence mode="wait">

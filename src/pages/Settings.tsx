@@ -149,7 +149,7 @@ export default function Settings() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold font-[family-name:var(--font-heading)]">Settings</h1>
-            <p className="text-muted-foreground mt-1">Customize your SyncUp experience.</p>
+            <p className="text-muted-foreground mt-1">Customize your Synedify experience.</p>
           </div>
           <Button variant="ghost" size="sm" onClick={handleResetAll} className="text-muted-foreground">
             Reset All
