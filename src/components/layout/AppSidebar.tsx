@@ -2,12 +2,12 @@ import {
   LayoutDashboard,
   Building2,
   UserCircle,
-  Zap,
   MessageSquare,
   Users,
   Settings,
   FileText,
 } from "lucide-react";
+import synedifyLogo from "@/assets/synedify-logo.png";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -37,11 +37,9 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-            <Zap className="h-4 w-4 text-primary-foreground" />
-          </div>
+          <img src={synedifyLogo} alt="Synedify logo" className="h-8 w-8 rounded-lg" />
           <span className="text-lg font-bold font-[family-name:var(--font-heading)] group-data-[collapsible=icon]:hidden">
-            SyncUp
+            Synedify
           </span>
         </div>
       </SidebarHeader>

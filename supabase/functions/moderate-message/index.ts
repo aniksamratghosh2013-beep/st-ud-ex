@@ -206,7 +206,7 @@ Only flag genuinely harmful content.`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              from: 'SyncUp <onboarding@resend.dev>',
+              from: 'Synedify <onboarding@resend.dev>',
               to: ADMIN_EMAIL,
               subject: `🚨 AUTO-BAN: ${escapeHtml(profile?.full_name || 'Unknown').substring(0, 50)}`,
               html: `
@@ -231,7 +231,7 @@ Only flag genuinely harmful content.`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              from: 'SyncUp <onboarding@resend.dev>',
+              from: 'Synedify <onboarding@resend.dev>',
               to: ADMIN_EMAIL,
               subject: `⚠️ Content Flagged [${escapeHtml(source || 'unknown').substring(0, 20)}]`,
               html: `
