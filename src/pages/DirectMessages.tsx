@@ -162,8 +162,12 @@ export default function DirectMessages() {
       toast({ title: "Upload failed", description: sanitizeError(error), variant: "destructive" });
       return null;
     }
-    const { data: urlData } = supabase.storage.from("chat-attachments").getPublicUrl(filePath);
-    return { url: urlData.publicUrl, name: file.name, type: file.type };
+    const { data: urlData, error: urlError } = await supabase.storage.from("chat-attachments").createSignedUrl(filePath, 3600);
+    if (urlError || !urlData?.signedUrl) {
+      toast({ title: "Failed to get file URL", variant: "destructive" });
+      return null;
+    }
+    return { url: urlData.signedUrl, name: file.name, type: file.type };
   };
 
   const handleSend = async () => {
