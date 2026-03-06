@@ -49,6 +49,34 @@ serve(async (req) => {
 
     const { recipientEmail: providedEmail, recipientId, recipientName, type, data } = await req.json();
 
+    // Verify sender-recipient relationship before allowing notification
+    const resolvedRecipientId = recipientId || data?.receiverId;
+    if (resolvedRecipientId) {
+      // Check: they share an org membership OR have an existing DM thread
+      const { count: sharedOrgCount } = await supabaseAdmin
+        .from('organization_memberships')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('status', 'approved')
+        .in('organization_id', 
+          (await supabaseAdmin
+            .from('organization_memberships')
+            .select('organization_id')
+            .eq('user_id', resolvedRecipientId)
+            .eq('status', 'approved')
+          ).data?.map((m: any) => m.organization_id) || []
+        );
+
+      const { count: dmCount } = await supabaseAdmin
+        .from('direct_messages')
+        .select('*', { count: 'exact', head: true })
+        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${resolvedRecipientId}),and(sender_id.eq.${resolvedRecipientId},receiver_id.eq.${user.id})`);
+
+      if (!(sharedOrgCount && sharedOrgCount > 0) && !(dmCount && dmCount > 0)) {
+        return new Response(JSON.stringify({ error: 'No relationship with recipient' }), { status: 403, headers: corsHeaders });
+      }
+    }
+
     // Resolve recipient email: use provided or look up by recipientId
     let recipientEmail = providedEmail;
     if (!recipientEmail && recipientId) {
