@@ -53,8 +53,19 @@ export default function Organizations() {
 
   useEffect(() => { fetchOrgs(); }, [user]);
 
+  const getWordCount = (text: string) => text.trim().split(/\s+/).filter(Boolean).length;
+
   const handleCreate = async () => {
     if (!user || !newName.trim()) return;
+    const descWordCount = getWordCount(newDesc);
+    if (descWordCount < 40) {
+      toast({ title: "Too short", description: `Description must be at least 40 words. Current: ${descWordCount} words.`, variant: "destructive" });
+      return;
+    }
+    if (descWordCount > 100) {
+      toast({ title: "Too long", description: `Description must be at most 100 words. Current: ${descWordCount} words.`, variant: "destructive" });
+      return;
+    }
     setCreating(true);
     const { error } = await supabase.from("organizations").insert({
       name: newName.trim(),
@@ -122,10 +133,13 @@ export default function Organizations() {
                 <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="My Organization" />
               </div>
               <div className="space-y-2">
-                <Label>Description</Label>
+                <Label>Description (40–100 words)</Label>
                 <Textarea value={newDesc} onChange={(e) => setNewDesc(e.target.value)} placeholder="What is this organization about?" />
+                <span className={`text-xs ${(() => { const wc = getWordCount(newDesc); return wc > 0 && (wc < 40 || wc > 100) ? 'text-destructive' : 'text-muted-foreground'; })()}`}>
+                  {getWordCount(newDesc)} / 40–100 words
+                </span>
               </div>
-              <Button onClick={handleCreate} disabled={creating || !newName.trim()} className="w-full">
+              <Button onClick={handleCreate} disabled={creating || !newName.trim() || getWordCount(newDesc) < 40 || getWordCount(newDesc) > 100} className="w-full">
                 {creating ? "Creating..." : "Create Organization"}
               </Button>
             </div>
