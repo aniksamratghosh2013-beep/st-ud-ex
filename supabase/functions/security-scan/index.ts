@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
-    const { data: isAdmin } = await serviceClient.rpc("is_super_admin", { _user_id: user.id });
+    const { data: isAdmin } = await serviceClient.rpc("is_app_founder", { _user_id: user.id });
     if (!isAdmin) {
       return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: corsHeaders });
     }
