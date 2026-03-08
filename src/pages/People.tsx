@@ -266,14 +266,14 @@ export default function People() {
         </TabsList>
         </div>
 
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="popLayout">
           {activeTab === "users" && (
             <motion.div
               key="users"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2, ease: "easeInOut" }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
               className="space-y-6 mt-2"
             >
               <div className="flex items-center justify-between">
@@ -325,10 +325,10 @@ export default function People() {
           {activeTab === "chats" && (
             <motion.div
               key="chats"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2, ease: "easeInOut" }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
               className="mt-2"
             >
           <div className="flex flex-col md:flex-row h-[calc(100vh-14rem)] gap-4">
@@ -370,7 +370,8 @@ export default function People() {
 
             {/* Chat area */}
             <Card className={`flex-1 flex flex-col overflow-hidden ${!selectedUser ? "hidden md:flex" : "flex"}`}>
-              {selectedUser && chatProfile ? (
+              {selectedUser ? (
+                chatProfile ? (
                 <>
                   <div className="p-4 border-b flex items-center gap-3">
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedUser(null)}>
