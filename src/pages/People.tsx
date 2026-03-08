@@ -298,6 +298,7 @@ export default function People() {
         <h1 className="text-3xl font-bold font-[family-name:var(--font-heading)]">DM's</h1>
       </motion.div>
 
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
       <Tabs defaultValue="users">
         <div className="flex justify-center">
         <TabsList className="w-auto">
@@ -308,7 +309,7 @@ export default function People() {
 
         {/* Users Tab */}
         <TabsContent value="users" className="space-y-6">
-          <div className="flex items-center justify-between">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="flex items-center justify-between">
             <div className="relative flex-1 mr-4">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
@@ -319,9 +320,9 @@ export default function People() {
               />
             </div>
             <Badge variant="outline" className="ml-3">{profiles.length - 1} users</Badge>
-          </div>
+          </motion.div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filtered.map((profile) => (
               <Card key={profile.id} className="cursor-pointer hover:shadow-md transition-shadow"
                 onClick={() => setSelectedProfile(profile)}>
@@ -361,7 +362,7 @@ export default function People() {
                 </CardContent>
               </Card>
             ))}
-          </div>
+          </motion.div>
 
           {filtered.length === 0 && (
             <div className="text-center py-12 text-muted-foreground">No people found.</div>
@@ -479,6 +480,7 @@ export default function People() {
           </div>
         </TabsContent>
       </Tabs>
+      </motion.div>
 
       {/* Profile Dialog */}
       <Dialog open={!!selectedProfile} onOpenChange={() => setSelectedProfile(null)}>
