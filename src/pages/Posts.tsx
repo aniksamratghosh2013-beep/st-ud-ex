@@ -230,6 +230,7 @@ export default function Posts() {
             </div>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       <div className="space-y-4">
