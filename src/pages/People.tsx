@@ -297,10 +297,12 @@ export default function People() {
       <h1 className="text-3xl font-bold font-[family-name:var(--font-heading)]">DM's</h1>
 
       <Tabs defaultValue="users">
-        <TabsList className="w-auto justify-center">
+        <div className="flex justify-center">
+        <TabsList className="w-auto">
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="chats">Chats</TabsTrigger>
         </TabsList>
+        </div>
 
         {/* Users Tab */}
         <TabsContent value="users" className="space-y-6">
