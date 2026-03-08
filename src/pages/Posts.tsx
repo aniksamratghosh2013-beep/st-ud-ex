@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ interface PostWithAuthor {
 
 export default function Posts() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [posts, setPosts] = useState<PostWithAuthor[]>([]);
   const [myOrgs, setMyOrgs] = useState<Tables<"organizations">[]>([]);
@@ -221,7 +223,15 @@ export default function Posts() {
 
       <div className="space-y-4">
         {posts.map((post) => (
-          <Card key={post.id}>
+          <Card
+            key={post.id}
+            className={post.organization_id ? "cursor-pointer hover:shadow-md transition-shadow" : ""}
+            onClick={() => {
+              if (post.organization_id) {
+                navigate(`/organizations/${post.organization_id}`);
+              }
+            }}
+          >
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
@@ -248,7 +258,7 @@ export default function Posts() {
                   </div>
                 </div>
                 {user?.id === post.user_id && (
-                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => handleDelete(post.id)}>
+                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={(e) => { e.stopPropagation(); handleDelete(post.id); }}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 )}
