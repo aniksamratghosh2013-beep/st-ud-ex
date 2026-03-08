@@ -300,7 +300,7 @@ export default function People() {
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-      <Tabs defaultValue="users">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <div className="flex justify-center">
         <TabsList className="w-auto">
           <TabsTrigger value="users">Users</TabsTrigger>
@@ -346,7 +346,7 @@ export default function People() {
                       <span>{followerCounts[profile.id] || 0} {(followerCounts[profile.id] || 0) === 1 ? "follower" : "followers"}</span>
                     </div>
                     <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                      <Button size="sm" variant="outline" onClick={() => { setSelectedUser(profile.id); }}>
+                      <Button size="sm" variant="outline" onClick={() => { setSelectedUser(profile.id); setActiveTab("chats"); }}>
                         <MessageSquare className="h-3 w-3" />
                       </Button>
                       {myFollowing.has(profile.id) ? (
@@ -527,7 +527,7 @@ export default function People() {
                 )}
 
                 <div className="flex gap-2 w-full">
-                  <Button className="flex-1" onClick={() => { setSelectedProfile(null); setSelectedUser(selectedProfile.id); }}>
+                  <Button className="flex-1" onClick={() => { setSelectedProfile(null); setSelectedUser(selectedProfile.id); setActiveTab("chats"); }}>
                     <MessageSquare className="h-4 w-4 mr-2" /> Message
                   </Button>
                   {myFollowing.has(selectedProfile.id) ? (
