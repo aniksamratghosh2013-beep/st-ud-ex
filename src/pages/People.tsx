@@ -49,6 +49,14 @@ export default function People() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [selectedProfile, setSelectedProfile] = useState<Tables<"profiles"> | null>(null);
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
+  const displayProfileRef = useRef<Tables<"profiles"> | null>(null);
+
+  // Keep displayProfile in sync - update ref when selecting, keep it during close animation
+  if (selectedProfile) {
+    displayProfileRef.current = selectedProfile;
+  }
+  const displayProfile = displayProfileRef.current;
 
   // Chats tab state
   const [conversations, setConversations] = useState<ConversationPartner[]>([]);
