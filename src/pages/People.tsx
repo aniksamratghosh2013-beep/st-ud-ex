@@ -11,16 +11,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Search, UserPlus, UserMinus, MessageSquare, Users, Send, ArrowLeft } from "lucide-react";
+import { Search, MessageSquare, Users, Send, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Tables } from "@/integrations/supabase/types";
 import { sanitizeError } from "@/lib/sanitize-error";
 import { FileAttachmentButton, AttachmentPreview } from "@/components/chat/FileAttachment";
-
-interface FollowRecord {
-  follower_id: string;
-  following_id: string;
-}
 
 interface DM {
   id: string;
@@ -53,8 +48,6 @@ export default function People() {
   const [profiles, setProfiles] = useState<Tables<"profiles">[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
-  const [myFollowing, setMyFollowing] = useState<Set<string>>(new Set());
-  const [followerCounts, setFollowerCounts] = useState<Record<string, number>>({});
   const [selectedProfile, setSelectedProfile] = useState<Tables<"profiles"> | null>(null);
 
   // Chats tab state
@@ -67,28 +60,12 @@ export default function People() {
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Fetch users data
   const fetchData = async () => {
     const { data: allProfiles } = await supabase
       .from("profiles")
       .select("*")
       .order("full_name");
     setProfiles(allProfiles || []);
-
-    if (user) {
-      const { data: follows } = await (supabase as any)
-        .from("follows")
-        .select("following_id")
-        .eq("follower_id", user.id);
-      setMyFollowing(new Set((follows as FollowRecord[] || []).map((f: any) => f.following_id)));
-    }
-
-    const { data: allFollows } = await (supabase as any).from("follows").select("following_id");
-    const counts: Record<string, number> = {};
-    (allFollows || []).forEach((f: any) => {
-      counts[f.following_id] = (counts[f.following_id] || 0) + 1;
-    });
-    setFollowerCounts(counts);
     setLoading(false);
   };
 
@@ -193,33 +170,6 @@ export default function People() {
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  const handleFollow = async (targetId: string) => {
-    if (!user) return;
-    const { error } = await (supabase as any).from("follows").insert({
-      follower_id: user.id,
-      following_id: targetId,
-    });
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      setMyFollowing(prev => new Set(prev).add(targetId));
-      setFollowerCounts(prev => ({ ...prev, [targetId]: (prev[targetId] || 0) + 1 }));
-      toast({ title: "Following!" });
-    }
-  };
-
-  const handleUnfollow = async (targetId: string) => {
-    if (!user) return;
-    await (supabase as any).from("follows").delete().eq("follower_id", user.id).eq("following_id", targetId);
-    setMyFollowing(prev => {
-      const next = new Set(prev);
-      next.delete(targetId);
-      return next;
-    });
-    setFollowerCounts(prev => ({ ...prev, [targetId]: Math.max(0, (prev[targetId] || 1) - 1) }));
-    toast({ title: "Unfollowed" });
-  };
 
   const uploadAttachment = async (file: File): Promise<{ url: string; name: string; type: string } | null> => {
     const filePath = `dm/${user!.id}/${Date.now()}-${file.name}`;
@@ -348,24 +298,11 @@ export default function People() {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Users className="h-3.5 w-3.5" />
-                          <span>{followerCounts[profile.id] || 0} {(followerCounts[profile.id] || 0) === 1 ? "follower" : "followers"}</span>
-                        </div>
-                        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-end">
+                        <div onClick={(e) => e.stopPropagation()}>
                           <Button size="sm" variant="outline" onClick={() => { setSelectedUser(profile.id); setActiveTab("chats"); }}>
-                            <MessageSquare className="h-3 w-3" />
+                            <MessageSquare className="h-3 w-3 mr-1" /> Message
                           </Button>
-                          {myFollowing.has(profile.id) ? (
-                            <Button size="sm" variant="secondary" onClick={() => handleUnfollow(profile.id)}>
-                              <UserMinus className="h-3 w-3 mr-1" /> Unfollow
-                            </Button>
-                          ) : (
-                            <Button size="sm" onClick={() => handleFollow(profile.id)}>
-                              <UserPlus className="h-3 w-3 mr-1" /> Follow
-                            </Button>
-                          )}
                         </div>
                       </div>
                     </CardContent>
@@ -521,13 +458,6 @@ export default function People() {
                   <p className="text-sm text-muted-foreground">{selectedProfile.bio || "No bio"}</p>
                 </div>
 
-                <div className="flex gap-4 text-center">
-                  <div>
-                    <div className="text-lg font-bold">{followerCounts[selectedProfile.id] || 0}</div>
-                    <div className="text-xs text-muted-foreground">Followers</div>
-                  </div>
-                </div>
-
                 {selectedProfile.skills && selectedProfile.skills.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     {selectedProfile.skills.map((s, i) => (
@@ -544,20 +474,9 @@ export default function People() {
                   </div>
                 )}
 
-                <div className="flex gap-2 w-full">
-                  <Button className="flex-1" onClick={() => { setSelectedProfile(null); setSelectedUser(selectedProfile.id); setActiveTab("chats"); }}>
-                    <MessageSquare className="h-4 w-4 mr-2" /> Message
-                  </Button>
-                  {myFollowing.has(selectedProfile.id) ? (
-                    <Button variant="secondary" className="flex-1" onClick={() => handleUnfollow(selectedProfile.id)}>
-                      <UserMinus className="h-4 w-4 mr-2" /> Unfollow
-                    </Button>
-                  ) : (
-                    <Button variant="outline" className="flex-1" onClick={() => handleFollow(selectedProfile.id)}>
-                      <UserPlus className="h-4 w-4 mr-2" /> Follow
-                    </Button>
-                  )}
-                </div>
+                <Button className="w-full" onClick={() => { setSelectedProfile(null); setSelectedUser(selectedProfile.id); setActiveTab("chats"); }}>
+                  <MessageSquare className="h-4 w-4 mr-2" /> Message
+                </Button>
               </div>
             </>
           )}
