@@ -301,7 +301,7 @@ export default function People() {
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-between gap-2">
                           <CardTitle className="text-base truncate">{profile.full_name || "Unknown"}</CardTitle>
                           <div onClick={(e) => e.stopPropagation()}>
                             <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => { setSelectedUser(profile.id); setActiveTab("chats"); }}>
