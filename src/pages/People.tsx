@@ -495,7 +495,9 @@ export default function People() {
               )}
             </Card>
           </div>
-        </TabsContent>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </Tabs>
       </motion.div>
 
