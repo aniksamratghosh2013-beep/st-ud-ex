@@ -723,8 +723,8 @@ export default function OrganizationDetail() {
         {/* Calendar Tab (subscribers only) */}
         {isSubscribed && (
           <TabsContent value="calendar" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Calendar</h2>
+            <div className="relative flex items-center justify-center">
+              <h2 className="text-lg font-semibold text-center">Calendar</h2>
               {(isFounder || isAdmin) && (
                 <Dialog open={calDialogOpen} onOpenChange={setCalDialogOpen}>
                   <DialogTrigger asChild>
