@@ -239,6 +239,38 @@ export default function Organizations() {
           <p>No organizations found.</p>
         </div>
       )}
+
+      {/* Subscribe confirmation */}
+      <AlertDialog open={!!confirmSubOrg} onOpenChange={(open) => !open && setConfirmSubOrg(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Subscribe to Organization</AlertDialogTitle>
+            <AlertDialogDescription>
+              Upon subscribing to an organization, you get access to the org. chat, event calendar, and will receive notifications regarding new posts or updates.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => confirmSubOrg && handleSubscribe(confirmSubOrg)}>Subscribe</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Unsubscribe confirmation */}
+      <AlertDialog open={!!confirmUnsubOrg} onOpenChange={(open) => !open && setConfirmUnsubOrg(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsubscribe from Organization</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to unsubscribe? You will lose access to the org. chat, event calendar, and notifications.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => confirmUnsubOrg && handleUnsubscribe(confirmUnsubOrg)}>Unsubscribe</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
