@@ -605,13 +605,18 @@ export default function OrganizationDetail() {
                   <Textarea
                     value={bioText}
                     onChange={(e) => setBioText(e.target.value)}
-                    placeholder="Write a bio for this organization..."
+                    placeholder="Write a bio for this organization (40-100 words)..."
                     className="min-h-[100px] resize-none"
                     maxLength={2000}
                   />
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={handleSaveBio}>Save</Button>
-                    <Button size="sm" variant="outline" onClick={() => { setEditingBio(false); setBioText(org.description || ""); }}>Cancel</Button>
+                  <div className="flex items-center justify-between">
+                    <span className={`text-xs ${(() => { const wc = getWordCount(bioText); return wc < 40 || wc > 100 ? 'text-destructive' : 'text-muted-foreground'; })()}`}>
+                      {getWordCount(bioText)} / 40–100 words
+                    </span>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={handleSaveBio} disabled={getWordCount(bioText) < 40 || getWordCount(bioText) > 100}>Save</Button>
+                      <Button size="sm" variant="outline" onClick={() => { setEditingBio(false); setBioText(org.description || ""); }}>Cancel</Button>
+                    </div>
                   </div>
                 </div>
               ) : (
