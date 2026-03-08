@@ -105,6 +105,24 @@ export default function Organizations() {
       toast({ title: "Subscription request sent", description: "Waiting for admin approval." });
       fetchOrgs();
     }
+    setConfirmSubOrg(null);
+  };
+
+  const handleUnsubscribe = async (orgId: string) => {
+    if (!user) return;
+    const { error } = await supabase
+      .from("organization_memberships")
+      .delete()
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id);
+
+    if (error) {
+      toast({ title: "Error", description: sanitizeError(error), variant: "destructive" });
+    } else {
+      toast({ title: "Unsubscribed successfully" });
+      fetchOrgs();
+    }
+    setConfirmUnsubOrg(null);
   };
 
   const filtered = orgs.filter((o) =>
