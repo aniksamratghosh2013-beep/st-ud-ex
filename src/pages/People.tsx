@@ -292,7 +292,7 @@ export default function People() {
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {filtered.map((profile) => (
                   <Card key={profile.id} className="cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={() => setSelectedProfile(profile)}>
+                    onClick={() => { setSelectedProfile(profile); setProfileDialogOpen(true); }}>
                     <CardHeader className="flex flex-row items-center gap-3">
                       <Avatar className="h-12 w-12">
                         <AvatarImage src={profile.avatar_url || ""} />
@@ -445,41 +445,47 @@ export default function People() {
       </motion.div>
 
       {/* Profile Dialog */}
-      <Dialog open={!!selectedProfile} onOpenChange={(open) => { if (!open) setSelectedProfile(null); }}>
-        <DialogContent className="max-w-md" onAnimationEnd={() => { if (!selectedProfile) return; }}>
+      <Dialog open={profileDialogOpen} onOpenChange={(open) => {
+        setProfileDialogOpen(open);
+        if (!open) {
+          // Delay clearing profile data so content stays visible during close animation
+          setTimeout(() => setSelectedProfile(null), 300);
+        }
+      }}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Profile</DialogTitle>
           </DialogHeader>
-          {selectedProfile && (
+          {displayProfile && (
             <div className="flex flex-col items-center gap-4 py-4">
               <Avatar className="h-20 w-20">
-                <AvatarImage src={selectedProfile.avatar_url || ""} />
+                <AvatarImage src={displayProfile.avatar_url || ""} />
                 <AvatarFallback className="text-2xl bg-primary/10 text-primary font-bold">
-                  {selectedProfile.full_name?.[0]?.toUpperCase() || "?"}
+                  {displayProfile.full_name?.[0]?.toUpperCase() || "?"}
                 </AvatarFallback>
               </Avatar>
               <div className="text-center">
-                <h2 className="text-xl font-bold">{selectedProfile.full_name || "Unknown"}</h2>
-                <p className="text-sm text-muted-foreground">{selectedProfile.bio || "No bio"}</p>
+                <h2 className="text-xl font-bold">{displayProfile.full_name || "Unknown"}</h2>
+                <p className="text-sm text-muted-foreground">{displayProfile.bio || "No bio"}</p>
               </div>
 
-              {selectedProfile.skills && selectedProfile.skills.length > 0 && (
+              {displayProfile.skills && displayProfile.skills.length > 0 && (
                 <div className="flex flex-wrap gap-1">
-                  {selectedProfile.skills.map((s, i) => (
+                  {displayProfile.skills.map((s, i) => (
                     <Badge key={i} variant="secondary" className="text-xs">{s}</Badge>
                   ))}
                 </div>
               )}
 
-              {selectedProfile.interests && selectedProfile.interests.length > 0 && (
+              {displayProfile.interests && displayProfile.interests.length > 0 && (
                 <div className="flex flex-wrap gap-1">
-                  {selectedProfile.interests.map((s, i) => (
+                  {displayProfile.interests.map((s, i) => (
                     <Badge key={i} variant="outline" className="text-xs">{s}</Badge>
                   ))}
                 </div>
               )}
 
-              <Button size="icon" onClick={() => { setSelectedProfile(null); setSelectedUser(selectedProfile.id); setActiveTab("chats"); }}>
+              <Button size="icon" onClick={() => { setProfileDialogOpen(false); setSelectedUser(displayProfile.id); setActiveTab("chats"); setTimeout(() => setSelectedProfile(null), 300); }}>
                 <MessageSquare className="h-4 w-4" />
               </Button>
             </div>
