@@ -53,8 +53,19 @@ export default function Organizations() {
 
   useEffect(() => { fetchOrgs(); }, [user]);
 
+  const getWordCount = (text: string) => text.trim().split(/\s+/).filter(Boolean).length;
+
   const handleCreate = async () => {
     if (!user || !newName.trim()) return;
+    const descWordCount = getWordCount(newDesc);
+    if (descWordCount < 40) {
+      toast({ title: "Too short", description: `Description must be at least 40 words. Current: ${descWordCount} words.`, variant: "destructive" });
+      return;
+    }
+    if (descWordCount > 100) {
+      toast({ title: "Too long", description: `Description must be at most 100 words. Current: ${descWordCount} words.`, variant: "destructive" });
+      return;
+    }
     setCreating(true);
     const { error } = await supabase.from("organizations").insert({
       name: newName.trim(),
