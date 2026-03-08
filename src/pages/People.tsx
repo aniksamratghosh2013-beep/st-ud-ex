@@ -472,8 +472,8 @@ export default function People() {
                   </div>
                 )}
 
-                <Button className="w-full" onClick={() => { setSelectedProfile(null); setSelectedUser(selectedProfile.id); setActiveTab("chats"); }}>
-                  <MessageSquare className="h-4 w-4 mr-2" /> Message
+                <Button size="icon" onClick={() => { setSelectedProfile(null); setSelectedUser(selectedProfile.id); setActiveTab("chats"); }}>
+                  <MessageSquare className="h-4 w-4" />
                 </Button>
               </div>
             </>
