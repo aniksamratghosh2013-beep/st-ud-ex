@@ -83,18 +83,12 @@ export default function Posts() {
       setMyOrgs(orgs || []);
     }
 
-    // Check if user is a super_admin, founder, or org_admin
-    const { data: isSuperAdmin } = await supabase.rpc("is_super_admin", { _user_id: user.id });
-    if (isSuperAdmin) {
-      setIsOrgAdmin(true);
-      return;
-    }
-
+    // Check if user is a founder or org_admin of any org
     const { data: roles } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
-      .in("role", ["founder", "org_admin"]);
+      .in("role", ["founder", "org_admin", "super_admin"]);
 
     setIsOrgAdmin((roles?.length ?? 0) > 0);
   };
