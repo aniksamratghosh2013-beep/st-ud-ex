@@ -16,6 +16,7 @@ import { Plus, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { Tables } from "@/integrations/supabase/types";
 import { sanitizeError } from "@/lib/sanitize-error";
+import { motion } from "framer-motion";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -137,7 +138,7 @@ export default function Organizations() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
         <h1 className="text-3xl font-bold font-[family-name:var(--font-heading)]">Organizations</h1>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
@@ -168,10 +169,10 @@ export default function Organizations() {
               </Button>
             </div>
           </DialogContent>
-        </Dialog>
-      </div>
+      </Dialog>
+      </motion.div>
 
-      <div className="relative w-full">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="relative w-full">
         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search organizations..."
@@ -179,9 +180,9 @@ export default function Organizations() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-      </div>
+      </motion.div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {filtered.map((org) => (
           <Card key={org.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/organizations/${org.id}`)}>
             <CardHeader className="flex flex-row items-center gap-3">
@@ -226,7 +227,7 @@ export default function Organizations() {
             </CardContent>
           </Card>
         ))}
-      </div>
+      </motion.div>
 
       {filtered.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">

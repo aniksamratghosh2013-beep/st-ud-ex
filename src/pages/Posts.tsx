@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { sanitizeError } from "@/lib/sanitize-error";
+import { motion } from "framer-motion";
 import type { Tables } from "@/integrations/supabase/types";
 
 interface PostWithAuthor {
@@ -160,7 +161,7 @@ export default function Posts() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
         <h1 className="text-3xl font-bold font-[family-name:var(--font-heading)]">Posts</h1>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
@@ -219,9 +220,9 @@ export default function Posts() {
             </div>
           </DialogContent>
         </Dialog>
-      </div>
+      </motion.div>
 
-      <div className="space-y-4">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="space-y-4">
         {posts.map((post) => (
           <Card
             key={post.id}
@@ -275,7 +276,7 @@ export default function Posts() {
             <p>No posts yet. Be the first to share something!</p>
           </div>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 }

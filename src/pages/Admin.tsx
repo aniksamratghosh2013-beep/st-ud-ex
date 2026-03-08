@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Users, Building2, Shield, Ban, AlertTriangle, CheckCircle, XCircle, UserPlus } from "lucide-react";
+import { motion } from "framer-motion";
 import type { Tables, Enums } from "@/integrations/supabase/types";
 import { sanitizeError } from "@/lib/sanitize-error";
 
@@ -229,12 +230,12 @@ export default function Admin() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2">
         <Shield className="h-6 w-6 text-primary" />
         <h1 className="text-3xl font-bold font-[family-name:var(--font-heading)]">Admin Dashboard</h1>
-      </div>
+      </motion.div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Users</CardTitle>
@@ -263,7 +264,7 @@ export default function Admin() {
           </CardHeader>
           <CardContent><div className="text-2xl font-bold">{reports.filter(r => r.status === "pending").length}</div></CardContent>
         </Card>
-      </div>
+      </motion.div>
 
       <Tabs defaultValue="bans">
         <TabsList>

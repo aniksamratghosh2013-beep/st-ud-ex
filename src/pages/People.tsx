@@ -294,7 +294,9 @@ export default function People() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold font-[family-name:var(--font-heading)]">DM's</h1>
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+        <h1 className="text-3xl font-bold font-[family-name:var(--font-heading)]">DM's</h1>
+      </motion.div>
 
       <Tabs defaultValue="users">
         <div className="flex justify-center">
