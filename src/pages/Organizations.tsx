@@ -134,7 +134,7 @@ export default function Organizations() {
               </div>
               <div className="space-y-2">
                 <Label>Description (40–100 words)</Label>
-                <Textarea value={newDesc} onChange={(e) => setNewDesc(e.target.value)} placeholder="Write about what your organization is dedicated towards, and mention your organization's instagram account!" />
+                <Textarea value={newDesc} onChange={(e) => setNewDesc(e.target.value)} placeholder="Tell us what your organization is dedicated to, and mention the instagram account ☺︎" />
                 <span className={`text-xs ${(() => { const wc = getWordCount(newDesc); return wc > 0 && (wc < 40 || wc > 100) ? 'text-destructive' : 'text-muted-foreground'; })()}`}>
                   {getWordCount(newDesc)} / 40–100 words
                 </span>
