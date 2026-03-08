@@ -34,6 +34,7 @@ interface PostWithAuthor {
 
 export default function Posts() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [posts, setPosts] = useState<PostWithAuthor[]>([]);
   const [myOrgs, setMyOrgs] = useState<Tables<"organizations">[]>([]);
