@@ -33,7 +33,7 @@ export default function Auth() {
           <div className="absolute bottom-20 right-20 h-96 w-96 rounded-full bg-primary-foreground blur-3xl" />
         </div>
         <div className="relative z-10 text-center px-12">
-         <img src={synedifyLogo} alt="Synedify logo" className="h-20 w-20 rounded-2xl mb-6" />
+         <img src={synedifyLogo} alt="Synedify logo" className="h-20 w-20 rounded-2xl mb-6 mx-auto" />
           <h1 className="text-4xl font-bold text-primary-foreground font-[family-name:var(--font-heading)] mb-4">
             Synedify
           </h1>
