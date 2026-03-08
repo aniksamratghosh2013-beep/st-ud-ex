@@ -44,6 +44,7 @@ export default function Posts() {
   const [content, setContent] = useState("");
   const [postAs, setPostAs] = useState<string>("personal");
   const [creating, setCreating] = useState(false);
+  const [isOrgAdmin, setIsOrgAdmin] = useState(false);
 
   const fetchPosts = async () => {
     const { data: postsData } = await supabase
@@ -81,6 +82,15 @@ export default function Posts() {
       const { data: orgs } = await supabase.from("organizations").select("*").in("id", orgIds);
       setMyOrgs(orgs || []);
     }
+
+    // Check if user is a founder or org_admin of any org
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .in("role", ["founder", "org_admin", "super_admin"]);
+
+    setIsOrgAdmin((roles?.length ?? 0) > 0);
   };
 
   useEffect(() => {
@@ -162,6 +172,7 @@ export default function Posts() {
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold font-[family-name:var(--font-heading)]">Posts</h1>
+        {isOrgAdmin && (
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -219,6 +230,7 @@ export default function Posts() {
             </div>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       <div className="space-y-4">
