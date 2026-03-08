@@ -33,6 +33,8 @@ export default function Organizations() {
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [confirmSubOrg, setConfirmSubOrg] = useState<string | null>(null);
+  const [confirmUnsubOrg, setConfirmUnsubOrg] = useState<string | null>(null);
 
   const fetchOrgs = async () => {
     const { data } = await supabase
