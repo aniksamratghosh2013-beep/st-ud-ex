@@ -227,7 +227,6 @@ export default function Posts() {
             </div>
           </DialogContent>
         </Dialog>
-        </Dialog>
         )}
       </motion.div>
 
