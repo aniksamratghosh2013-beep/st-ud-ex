@@ -133,8 +133,11 @@ export default function Organizations() {
                 <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="My Organization" />
               </div>
               <div className="space-y-2">
-                <Label>Description</Label>
+                <Label>Description (40–100 words)</Label>
                 <Textarea value={newDesc} onChange={(e) => setNewDesc(e.target.value)} placeholder="What is this organization about?" />
+                <span className={`text-xs ${(() => { const wc = getWordCount(newDesc); return wc > 0 && (wc < 40 || wc > 100) ? 'text-destructive' : 'text-muted-foreground'; })()}`}>
+                  {getWordCount(newDesc)} / 40–100 words
+                </span>
               </div>
               <Button onClick={handleCreate} disabled={creating || !newName.trim()} className="w-full">
                 {creating ? "Creating..." : "Create Organization"}
