@@ -258,7 +258,7 @@ export default function Posts() {
                   </div>
                 </div>
                 {user?.id === post.user_id && (
-                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => handleDelete(post.id)}>
+                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={(e) => { e.stopPropagation(); handleDelete(post.id); }}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 )}
