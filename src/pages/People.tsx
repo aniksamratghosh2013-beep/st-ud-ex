@@ -293,19 +293,17 @@ export default function People() {
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <CardTitle className="text-base truncate">{profile.full_name || "Unknown"}</CardTitle>
+                        <div className="flex items-center gap-2">
+                          <CardTitle className="text-base truncate">{profile.full_name || "Unknown"}</CardTitle>
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => { setSelectedUser(profile.id); setActiveTab("chats"); }}>
+                              <MessageSquare className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
                         <p className="text-xs text-muted-foreground truncate">{profile.bio || "No bio"}</p>
                       </div>
                     </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-end">
-                        <div onClick={(e) => e.stopPropagation()}>
-                          <Button size="sm" variant="outline" onClick={() => { setSelectedUser(profile.id); setActiveTab("chats"); }}>
-                            <MessageSquare className="h-3 w-3 mr-1" /> Message
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
                   </Card>
                 ))}
               </div>
