@@ -740,6 +740,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      is_app_founder: { Args: { _user_id: string }; Returns: boolean }
       is_global_admin: { Args: { _user_id: string }; Returns: boolean }
       is_member: {
         Args: { _org_id: string; _user_id: string }
