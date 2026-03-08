@@ -507,7 +507,7 @@ export default function OrganizationDetail() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-start gap-4">
+      <div className="flex items-center gap-4">
         <div className="relative">
           <Avatar className="h-16 w-16">
             <AvatarImage src={org.logo_url || ""} />
