@@ -280,12 +280,15 @@ export default function OrganizationDetail() {
       toast({ title: "Error", description: "User must be an approved member", variant: "destructive" });
       return;
     }
+    // Delete existing role then insert new one (no unique constraint for upsert)
+    await supabase
+      .from("user_roles")
+      .delete()
+      .eq("user_id", userId)
+      .eq("organization_id", id);
     const { error } = await supabase
       .from("user_roles")
-      .upsert(
-        { user_id: userId, organization_id: id, role: newRole },
-        { onConflict: 'user_id,organization_id' }
-      );
+      .insert({ user_id: userId, organization_id: id, role: newRole });
     if (error) {
       toast({ title: "Error", description: sanitizeError(error), variant: "destructive" });
     } else {
@@ -723,15 +726,16 @@ export default function OrganizationDetail() {
         {/* Calendar Tab (subscribers only) */}
         {isSubscribed && (
           <TabsContent value="calendar" className="space-y-6">
-            <div className="relative flex items-center justify-center">
-              <h2 className="text-lg font-semibold text-center">Calendar</h2>
-              {(isFounder || isAdmin) && (
-                <Dialog open={calDialogOpen} onOpenChange={setCalDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button size="sm" className="absolute right-0">
-                      <Plus className="mr-2 h-4 w-4" /> Add Event
-                    </Button>
-                  </DialogTrigger>
+            <Card>
+              <CardHeader className="relative">
+                <CardTitle className="text-center">Calendar</CardTitle>
+                {(isFounder || isAdmin) && (
+                  <Dialog open={calDialogOpen} onOpenChange={setCalDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" className="absolute right-4 top-4">
+                        <Plus className="mr-2 h-4 w-4" /> Add Event
+                      </Button>
+                    </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle>Add Event</DialogTitle>
@@ -765,9 +769,10 @@ export default function OrganizationDetail() {
                       </Button>
                     </div>
                   </DialogContent>
-                </Dialog>
-              )}
-            </div>
+                  </Dialog>
+                )}
+              </CardHeader>
+            </Card>
 
             <div className="grid gap-6 md:grid-cols-[auto_1fr]">
               <Card className="w-fit">
