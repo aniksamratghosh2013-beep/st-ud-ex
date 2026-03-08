@@ -371,9 +371,9 @@ export default function People() {
 
         {/* Chats Tab */}
         <TabsContent value="chats">
-          <div className="flex h-[calc(100vh-14rem)] gap-4">
+          <div className="flex flex-col md:flex-row h-[calc(100vh-14rem)] gap-4">
             {/* Conversations list */}
-            <div className="w-64 flex flex-col gap-2 shrink-0">
+            <div className={`w-full md:w-64 flex flex-col gap-2 shrink-0 ${selectedUser ? "hidden md:flex" : "flex"}`}>
               <h2 className="text-lg font-semibold px-2">Messages</h2>
               <div className="flex-1 overflow-auto space-y-1">
                 {conversations.map(c => (
@@ -409,7 +409,7 @@ export default function People() {
             </div>
 
             {/* Chat area */}
-            <Card className="flex-1 flex flex-col overflow-hidden">
+            <Card className={`flex-1 flex flex-col overflow-hidden ${!selectedUser ? "hidden md:flex" : "flex"}`}>
               {selectedUser && chatProfile ? (
                 <>
                   <div className="p-4 border-b flex items-center gap-3">
