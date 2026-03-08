@@ -84,12 +84,13 @@ export default function Posts() {
     }
 
     // Check if user is a founder or org_admin of any org
-    const { data: roles } = await supabase
+    const { data: roles, error: rolesError } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
       .in("role", ["founder", "org_admin", "super_admin"]);
 
+    console.log("Roles check:", { roles, rolesError, userId: user.id });
     setIsOrgAdmin((roles?.length ?? 0) > 0);
   };
 
