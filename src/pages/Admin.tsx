@@ -48,7 +48,7 @@ interface ProfileRow {
 export default function Admin() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [isAppFounder, setIsAppFounder] = useState(false);
   const [loading, setLoading] = useState(true);
   const [totalUsers, setTotalUsers] = useState(0);
   const [totalOrgs, setTotalOrgs] = useState(0);
@@ -61,8 +61,8 @@ export default function Admin() {
 
   const fetchAll = async () => {
     if (!user) return;
-    const { data: saCheck } = await supabase.rpc("is_super_admin", { _user_id: user.id });
-    setIsSuperAdmin(saCheck === true);
+    const { data: saCheck } = await supabase.rpc("is_app_founder", { _user_id: user.id });
+    setIsAppFounder(saCheck === true);
     if (saCheck !== true) { setLoading(false); return; }
 
     // Use raw queries for new tables not yet in generated types
@@ -217,7 +217,7 @@ export default function Admin() {
     </div>;
   }
 
-  if (!isSuperAdmin) {
+  if (!isAppFounder) {
     return (
       <Card>
         <CardContent className="py-8 text-center text-muted-foreground">

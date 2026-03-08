@@ -64,11 +64,11 @@ export default function OrganizationCalendar() {
     setEvents(eventsData || []);
 
     if (user) {
-      const [{ data: adminCheck }, { data: superCheck }] = await Promise.all([
+      const [{ data: adminCheck }, { data: appFounderCheck }] = await Promise.all([
         supabase.rpc("is_org_admin", { _user_id: user.id, _org_id: id }),
-        supabase.rpc("is_super_admin", { _user_id: user.id }),
+        supabase.rpc("is_app_founder", { _user_id: user.id }),
       ]);
-      setIsAdmin(adminCheck === true || superCheck === true);
+      setIsAdmin(adminCheck === true || appFounderCheck === true);
     }
 
     setLoading(false);

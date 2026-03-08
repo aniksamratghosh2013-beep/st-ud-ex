@@ -32,14 +32,14 @@ serve(async (req) => {
 
     const userId = claimsData.claims.sub;
 
-    // Only super_admins can send arbitrary emails
+    // Only app_founders can send arbitrary emails
     const serviceClient = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
-    const { data: isAdmin } = await serviceClient.rpc('is_super_admin', { _user_id: userId });
+    const { data: isAdmin } = await serviceClient.rpc('is_app_founder', { _user_id: userId });
     if (!isAdmin) {
-      return new Response(JSON.stringify({ error: 'Forbidden: super_admin required' }), { status: 403, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: 'Forbidden: app_founder required' }), { status: 403, headers: corsHeaders });
     }
 
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');

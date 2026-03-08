@@ -45,6 +45,7 @@ export default function Posts() {
   const [content, setContent] = useState("");
   const [postAs, setPostAs] = useState<string>("personal");
   const [creating, setCreating] = useState(false);
+  const [canPost, setCanPost] = useState(false);
 
   const fetchPosts = async () => {
     const { data: postsData } = await supabase
@@ -87,6 +88,11 @@ export default function Posts() {
   useEffect(() => {
     fetchPosts();
     fetchMyOrgs();
+    if (user) {
+      supabase.rpc("can_create_post", { _user_id: user.id }).then(({ data }) => {
+        setCanPost(data === true);
+      });
+    }
   }, [user]);
 
   useEffect(() => {
@@ -163,6 +169,7 @@ export default function Posts() {
     <div className="max-w-3xl mx-auto space-y-6">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
         <h1 className="text-3xl font-bold font-[family-name:var(--font-heading)]">Posts</h1>
+        {canPost && (
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -220,6 +227,8 @@ export default function Posts() {
             </div>
           </DialogContent>
         </Dialog>
+        </Dialog>
+        )}
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="space-y-4">
