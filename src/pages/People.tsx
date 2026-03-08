@@ -308,70 +308,86 @@ export default function People() {
         </TabsList>
         </div>
 
-        {/* Users Tab */}
-        <TabsContent value="users" className="space-y-6">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="flex items-center justify-between">
-            <div className="relative flex-1 mr-4">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search people..."
-                className="pl-9"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-            <Badge variant="outline" className="ml-3">{profiles.length - 1} users</Badge>
-          </motion.div>
+        <AnimatePresence mode="wait">
+          {activeTab === "users" && (
+            <motion.div
+              key="users"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              className="space-y-6 mt-2"
+            >
+              <div className="flex items-center justify-between">
+                <div className="relative flex-1 mr-4">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search people..."
+                    className="pl-9"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </div>
+                <Badge variant="outline" className="ml-3">{profiles.length - 1} users</Badge>
+              </div>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((profile) => (
-              <Card key={profile.id} className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => setSelectedProfile(profile)}>
-                <CardHeader className="flex flex-row items-center gap-3">
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={profile.avatar_url || ""} />
-                    <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                      {profile.full_name?.[0]?.toUpperCase() || "?"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <CardTitle className="text-base truncate">{profile.full_name || "Unknown"}</CardTitle>
-                    <p className="text-xs text-muted-foreground truncate">{profile.bio || "No bio"}</p>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <Users className="h-3.5 w-3.5" />
-                      <span>{followerCounts[profile.id] || 0} {(followerCounts[profile.id] || 0) === 1 ? "follower" : "followers"}</span>
-                    </div>
-                    <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                      <Button size="sm" variant="outline" onClick={() => { setSelectedUser(profile.id); setActiveTab("chats"); }}>
-                        <MessageSquare className="h-3 w-3" />
-                      </Button>
-                      {myFollowing.has(profile.id) ? (
-                        <Button size="sm" variant="secondary" onClick={() => handleUnfollow(profile.id)}>
-                          <UserMinus className="h-3 w-3 mr-1" /> Unfollow
-                        </Button>
-                      ) : (
-                        <Button size="sm" onClick={() => handleFollow(profile.id)}>
-                          <UserPlus className="h-3 w-3 mr-1" /> Follow
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </motion.div>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {filtered.map((profile) => (
+                  <Card key={profile.id} className="cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => setSelectedProfile(profile)}>
+                    <CardHeader className="flex flex-row items-center gap-3">
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={profile.avatar_url || ""} />
+                        <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                          {profile.full_name?.[0]?.toUpperCase() || "?"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-base truncate">{profile.full_name || "Unknown"}</CardTitle>
+                        <p className="text-xs text-muted-foreground truncate">{profile.bio || "No bio"}</p>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <Users className="h-3.5 w-3.5" />
+                          <span>{followerCounts[profile.id] || 0} {(followerCounts[profile.id] || 0) === 1 ? "follower" : "followers"}</span>
+                        </div>
+                        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                          <Button size="sm" variant="outline" onClick={() => { setSelectedUser(profile.id); setActiveTab("chats"); }}>
+                            <MessageSquare className="h-3 w-3" />
+                          </Button>
+                          {myFollowing.has(profile.id) ? (
+                            <Button size="sm" variant="secondary" onClick={() => handleUnfollow(profile.id)}>
+                              <UserMinus className="h-3 w-3 mr-1" /> Unfollow
+                            </Button>
+                          ) : (
+                            <Button size="sm" onClick={() => handleFollow(profile.id)}>
+                              <UserPlus className="h-3 w-3 mr-1" /> Follow
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
 
-          {filtered.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground">No people found.</div>
+              {filtered.length === 0 && (
+                <div className="text-center py-12 text-muted-foreground">No people found.</div>
+              )}
+            </motion.div>
           )}
-        </TabsContent>
 
-        {/* Chats Tab */}
-        <TabsContent value="chats">
+          {activeTab === "chats" && (
+            <motion.div
+              key="chats"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              className="mt-2"
+            >
           <div className="flex flex-col md:flex-row h-[calc(100vh-14rem)] gap-4">
             {/* Conversations list */}
             <div className={`w-full md:w-64 flex flex-col gap-2 shrink-0 ${selectedUser ? "hidden md:flex" : "flex"}`}>
@@ -479,7 +495,9 @@ export default function People() {
               )}
             </Card>
           </div>
-        </TabsContent>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </Tabs>
       </motion.div>
 
