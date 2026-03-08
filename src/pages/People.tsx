@@ -409,7 +409,7 @@ export default function People() {
             </div>
 
             {/* Chat area */}
-            <Card className="flex-1 flex flex-col overflow-hidden">
+            <Card className={`flex-1 flex flex-col overflow-hidden ${!selectedUser ? "hidden md:flex" : "flex"}`}>
               {selectedUser && chatProfile ? (
                 <>
                   <div className="p-4 border-b flex items-center gap-3">
