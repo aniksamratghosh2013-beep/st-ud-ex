@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -12,15 +12,10 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, Users, Heart, HeartOff } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { Tables } from "@/integrations/supabase/types";
 import { sanitizeError } from "@/lib/sanitize-error";
-
-interface OrgFollow {
-  follower_org_id: string;
-  following_org_id: string;
-}
 
 export default function Organizations() {
   const { user } = useAuth();
@@ -28,8 +23,6 @@ export default function Organizations() {
   const navigate = useNavigate();
   const [orgs, setOrgs] = useState<Tables<"organizations">[]>([]);
   const [myMemberships, setMyMemberships] = useState<Record<string, string>>({});
-  const [myAdminOrgIds, setMyAdminOrgIds] = useState<string[]>([]);
-  const [orgFollows, setOrgFollows] = useState<OrgFollow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [creating, setCreating] = useState(false);
@@ -54,18 +47,6 @@ export default function Organizations() {
       const map: Record<string, string> = {};
       memberships?.forEach((m) => { map[m.organization_id] = m.status; });
       setMyMemberships(map);
-
-      // Find orgs where user is admin/founder
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("organization_id, role")
-        .eq("user_id", user.id)
-        .in("role", ["org_admin", "founder"]);
-      setMyAdminOrgIds((roles || []).filter(r => r.organization_id).map(r => r.organization_id!));
-
-      // Fetch org follows
-      const { data: follows } = await supabase.from("organization_follows").select("follower_org_id, following_org_id");
-      setOrgFollows(follows || []);
     }
     setLoading(false);
   };
@@ -93,7 +74,7 @@ export default function Organizations() {
     }
   };
 
-  const handleJoin = async (orgId: string) => {
+  const handleSubscribe = async (orgId: string) => {
     if (!user) return;
     const { error } = await supabase.from("organization_memberships").insert({
       organization_id: orgId,
@@ -104,47 +85,9 @@ export default function Organizations() {
     if (error) {
       toast({ title: "Error", description: sanitizeError(error), variant: "destructive" });
     } else {
-      toast({ title: "Join request sent", description: "Waiting for admin approval." });
+      toast({ title: "Subscription request sent", description: "Waiting for admin approval." });
       fetchOrgs();
     }
-  };
-
-  const handleFollowOrg = async (followerOrgId: string, followingOrgId: string) => {
-    if (!user) return;
-    const { error } = await supabase.from("organization_follows").insert({
-      follower_org_id: followerOrgId,
-      following_org_id: followingOrgId,
-      created_by: user.id,
-    });
-    if (error) {
-      toast({ title: "Error", description: sanitizeError(error), variant: "destructive" });
-    } else {
-      toast({ title: "Now following this organization" });
-      fetchOrgs();
-    }
-  };
-
-  const handleUnfollowOrg = async (followerOrgId: string, followingOrgId: string) => {
-    const { error } = await supabase
-      .from("organization_follows")
-      .delete()
-      .eq("follower_org_id", followerOrgId)
-      .eq("following_org_id", followingOrgId);
-    if (error) {
-      toast({ title: "Error", description: sanitizeError(error), variant: "destructive" });
-    } else {
-      toast({ title: "Unfollowed" });
-      fetchOrgs();
-    }
-  };
-
-  const isFollowedByMyOrg = (targetOrgId: string): boolean => {
-    return orgFollows.some(f => myAdminOrgIds.includes(f.follower_org_id) && f.following_org_id === targetOrgId);
-  };
-
-  const getFollowerOrgId = (targetOrgId: string): string | null => {
-    const follow = orgFollows.find(f => myAdminOrgIds.includes(f.follower_org_id) && f.following_org_id === targetOrgId);
-    return follow?.follower_org_id || null;
   };
 
   const filtered = orgs.filter((o) =>
@@ -201,83 +144,38 @@ export default function Organizations() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((org) => {
-          const followed = isFollowedByMyOrg(org.id);
-          const isMyOrg = myAdminOrgIds.includes(org.id);
-
-          return (
-            <Card key={org.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/organizations/${org.id}`)}>
-              <CardHeader className="flex flex-row items-center gap-3">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={org.logo_url || ""} />
-                  <AvatarFallback className="bg-primary/10 text-primary text-sm font-bold">
-                    {org.name[0]?.toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <CardTitle className="text-base truncate">{org.name}</CardTitle>
-                  {followed ? (
-                    <CardDescription className="truncate">{org.description || "No description"}</CardDescription>
-                  ) : (
-                    <CardDescription className="text-xs italic">Follow to see bio</CardDescription>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <Users className="h-3.5 w-3.5" />
-                    <span>Team</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {/* Follow/unfollow button — only show if user is admin of another org */}
-                    {!isMyOrg && myAdminOrgIds.length > 0 && (
-                      followed ? (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-8 w-8 p-0"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const fid = getFollowerOrgId(org.id);
-                            if (fid) handleUnfollowOrg(fid, org.id);
-                          }}
-                        >
-                          <HeartOff className="h-4 w-4 text-destructive" />
-                        </Button>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-8 w-8 p-0"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleFollowOrg(myAdminOrgIds[0], org.id);
-                          }}
-                        >
-                          <Heart className="h-4 w-4" />
-                        </Button>
-                      )
-                    )}
-                    {myMemberships[org.id] === "approved" ? (
-                      <Badge>Member</Badge>
-                    ) : myMemberships[org.id] === "pending" ? (
-                      <Badge variant="secondary">Pending</Badge>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => { e.stopPropagation(); handleJoin(org.id); }}
-                      >
-                        Join
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+        {filtered.map((org) => (
+          <Card key={org.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/organizations/${org.id}`)}>
+            <CardHeader className="flex flex-row items-center gap-3">
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={org.logo_url || ""} />
+                <AvatarFallback className="bg-primary/10 text-primary text-sm font-bold">
+                  {org.name[0]?.toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <CardTitle className="text-base truncate">{org.name}</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-center">
+                {myMemberships[org.id] === "approved" ? (
+                  <Badge>Subscribed</Badge>
+                ) : myMemberships[org.id] === "pending" ? (
+                  <Badge variant="secondary">Pending</Badge>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={(e) => { e.stopPropagation(); handleSubscribe(org.id); }}
+                  >
+                    Subscribe
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {filtered.length === 0 && (

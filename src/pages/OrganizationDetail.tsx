@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,15 +8,24 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
-import { Check, X, UserMinus, Shield, Pencil, Camera, CalendarDays, FileText, Clock, Trash2, Edit } from "lucide-react";
+import {
+  Check, X, UserMinus, Shield, Pencil, Camera, CalendarDays, FileText, Clock,
+  Trash2, Edit, Hash, Plus, Send, MessageSquare, MapPin, CalendarIcon,
+} from "lucide-react";
 import type { Tables, Enums } from "@/integrations/supabase/types";
 import { sanitizeError } from "@/lib/sanitize-error";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format, isSameDay, parseISO } from "date-fns";
+import { motion, AnimatePresence } from "framer-motion";
+import { FileAttachmentButton, AttachmentPreview } from "@/components/chat/FileAttachment";
 
 interface PostWithAuthor {
   id: string;
@@ -35,6 +44,30 @@ interface MemberWithProfile {
   role: Enums<"app_role"> | null;
 }
 
+interface OrgEvent {
+  id: string;
+  organization_id: string;
+  created_by: string;
+  title: string;
+  description: string | null;
+  event_date: string;
+  event_time: string | null;
+  location: string | null;
+  created_at: string;
+}
+
+interface MessageWithProfile {
+  id: string;
+  content: string;
+  created_at: string;
+  user_id: string;
+  channel_id: string;
+  attachment_url?: string | null;
+  attachment_name?: string | null;
+  attachment_type?: string | null;
+  profile: Tables<"profiles"> | null;
+}
+
 export default function OrganizationDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -45,6 +78,7 @@ export default function OrganizationDetail() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [isFounder, setIsFounder] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editingBio, setEditingBio] = useState(false);
   const [bioText, setBioText] = useState("");
@@ -55,6 +89,27 @@ export default function OrganizationDetail() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [newOrgName, setNewOrgName] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState("");
+
+  // Calendar state
+  const [events, setEvents] = useState<OrgEvent[]>([]);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [calDialogOpen, setCalDialogOpen] = useState(false);
+  const [calTitle, setCalTitle] = useState("");
+  const [calDesc, setCalDesc] = useState("");
+  const [calDate, setCalDate] = useState("");
+  const [calTime, setCalTime] = useState("");
+  const [calLocation, setCalLocation] = useState("");
+  const [calCreating, setCalCreating] = useState(false);
+
+  // Chat state
+  const [channels, setChannels] = useState<Tables<"chat_channels">[]>([]);
+  const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
+  const [messages, setMessages] = useState<MessageWithProfile[]>([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [newChannelName, setNewChannelName] = useState("");
+  const [sending, setSending] = useState(false);
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const canManage = isAdmin || isSuperAdmin;
 
@@ -88,6 +143,12 @@ export default function OrganizationDetail() {
         });
       }
       setMembers(memberData);
+
+      // Check if current user is subscribed (approved member)
+      if (user) {
+        const myMembership = memberships.find(m => m.user_id === user.id);
+        setIsSubscribed(myMembership?.status === "approved");
+      }
     }
 
     if (user) {
@@ -116,10 +177,74 @@ export default function OrganizationDetail() {
       setOrgPosts(enriched);
     }
 
+    // Fetch events
+    const { data: eventsData } = await supabase
+      .from("organization_events")
+      .select("*")
+      .eq("organization_id", id)
+      .order("event_date", { ascending: true });
+    setEvents(eventsData || []);
+
+    // Fetch chat channels
+    const { data: channelsData } = await supabase
+      .from("chat_channels")
+      .select("*")
+      .eq("organization_id", id)
+      .order("created_at");
+    setChannels(channelsData || []);
+
     setLoading(false);
   };
 
   useEffect(() => { fetchData(); }, [id, user]);
+
+  // Chat messages + realtime
+  useEffect(() => {
+    if (!selectedChannel) return;
+
+    const fetchMessages = async () => {
+      const { data } = await supabase
+        .from("chat_messages")
+        .select("*")
+        .eq("channel_id", selectedChannel)
+        .order("created_at", { ascending: true })
+        .limit(200);
+
+      if (data) {
+        const withProfiles: MessageWithProfile[] = [];
+        const profileCache: Record<string, Tables<"profiles"> | null> = {};
+        for (const msg of data) {
+          if (!profileCache[msg.user_id]) {
+            const { data: p } = await supabase.from("profiles").select("*").eq("id", msg.user_id).single();
+            profileCache[msg.user_id] = p;
+          }
+          withProfiles.push({ ...msg, profile: profileCache[msg.user_id] });
+        }
+        setMessages(withProfiles);
+      }
+    };
+
+    fetchMessages();
+
+    const channel = supabase
+      .channel(`messages-${selectedChannel}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "chat_messages", filter: `channel_id=eq.${selectedChannel}` },
+        async (payload) => {
+          const newMsg = payload.new as Tables<"chat_messages">;
+          const { data: p } = await supabase.from("profiles").select("*").eq("id", newMsg.user_id).single();
+          setMessages((prev) => [...prev, { ...newMsg, profile: p }]);
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [selectedChannel]);
+
+  useEffect(() => {
+    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const handleMembership = async (membershipId: string, status: "approved" | "rejected") => {
     const { error } = await supabase
@@ -146,7 +271,10 @@ export default function OrganizationDetail() {
   };
 
   const handleRoleChange = async (userId: string, newRole: Enums<"app_role">) => {
-    if (!id) return;
+    if (!id || !isFounder) {
+      toast({ title: "Error", description: "Only the founder can change roles", variant: "destructive" });
+      return;
+    }
     const member = members.find(m => m.user_id === userId && m.status === 'approved');
     if (!member) {
       toast({ title: "Error", description: "User must be an approved member", variant: "destructive" });
@@ -223,7 +351,6 @@ export default function OrganizationDetail() {
 
   const handleDelete = async () => {
     if (!id || deleteConfirm !== org?.name) return;
-    // Delete related data first
     await supabase.from("user_roles").delete().eq("organization_id", id);
     await supabase.from("organization_memberships").delete().eq("organization_id", id);
     await supabase.from("organization_follows").delete().or(`follower_org_id.eq.${id},following_org_id.eq.${id}`);
@@ -236,6 +363,111 @@ export default function OrganizationDetail() {
     } else {
       toast({ title: "Organization deleted" });
       navigate("/organizations");
+    }
+  };
+
+  // Calendar handlers
+  const handleCreateEvent = async () => {
+    if (!user || !id || !calTitle.trim() || !calDate) return;
+    setCalCreating(true);
+    const { error } = await supabase.from("organization_events").insert({
+      organization_id: id,
+      created_by: user.id,
+      title: calTitle.trim().substring(0, 200),
+      description: calDesc.trim().substring(0, 2000) || null,
+      event_date: calDate,
+      event_time: calTime || null,
+      location: calLocation.trim().substring(0, 200) || null,
+    });
+    setCalCreating(false);
+    if (error) {
+      toast({ title: "Error", description: sanitizeError(error), variant: "destructive" });
+    } else {
+      toast({ title: "Event created!" });
+      setCalTitle(""); setCalDesc(""); setCalDate(""); setCalTime(""); setCalLocation("");
+      setCalDialogOpen(false);
+      fetchData();
+    }
+  };
+
+  const handleDeleteEvent = async (eventId: string) => {
+    const { error } = await supabase.from("organization_events").delete().eq("id", eventId);
+    if (error) {
+      toast({ title: "Error", description: sanitizeError(error), variant: "destructive" });
+    } else {
+      toast({ title: "Event deleted" });
+      fetchData();
+    }
+  };
+
+  // Chat handlers
+  const uploadAttachment = async (file: File): Promise<{ url: string; name: string; type: string } | null> => {
+    const filePath = `chat/${user!.id}/${Date.now()}-${file.name}`;
+    const { error } = await supabase.storage.from("chat-attachments").upload(filePath, file);
+    if (error) {
+      toast({ title: "Upload failed", description: sanitizeError(error), variant: "destructive" });
+      return null;
+    }
+    const { data: urlData, error: urlError } = await supabase.storage.from("chat-attachments").createSignedUrl(filePath, 3600);
+    if (urlError || !urlData?.signedUrl) {
+      toast({ title: "Failed to get file URL", variant: "destructive" });
+      return null;
+    }
+    return { url: urlData.signedUrl, name: file.name, type: file.type };
+  };
+
+  const currentChannel = channels.find((c) => c.id === selectedChannel);
+
+  const handleSendMessage = async () => {
+    if ((!newMessage.trim() && !attachedFile) || !user || !selectedChannel) return;
+    const content = newMessage.trim() || (attachedFile ? `📎 ${attachedFile.name}` : "");
+    if (content.length > 4000) {
+      toast({ title: "Error", description: "Message too long (max 4000 characters)", variant: "destructive" });
+      return;
+    }
+    setSending(true);
+
+    let attachment: { url: string; name: string; type: string } | null = null;
+    if (attachedFile) {
+      attachment = await uploadAttachment(attachedFile);
+      if (!attachment) { setSending(false); return; }
+    }
+
+    const { data: msgData, error } = await supabase.from("chat_messages").insert({
+      channel_id: selectedChannel,
+      user_id: user.id,
+      content,
+      attachment_url: attachment?.url || null,
+      attachment_name: attachment?.name || null,
+      attachment_type: attachment?.type || null,
+    }).select().single();
+    setSending(false);
+    if (error) {
+      toast({ title: "Error", description: sanitizeError(error), variant: "destructive" });
+    } else {
+      setNewMessage("");
+      setAttachedFile(null);
+      if (msgData) {
+        supabase.functions.invoke("moderate-message", {
+          body: { messageId: msgData.id, content, channelId: selectedChannel, source: "chat" },
+        }).catch(console.error);
+      }
+    }
+  };
+
+  const handleCreateChannel = async () => {
+    if (!newChannelName.trim() || !user || !id) return;
+    const { error } = await supabase.from("chat_channels").insert({
+      organization_id: id,
+      name: newChannelName.trim(),
+      created_by: user.id,
+    });
+    if (error) {
+      toast({ title: "Error", description: sanitizeError(error), variant: "destructive" });
+    } else {
+      setNewChannelName("");
+      const { data } = await supabase.from("chat_channels").select("*").eq("organization_id", id).order("created_at");
+      setChannels(data || []);
     }
   };
 
@@ -252,6 +484,11 @@ export default function OrganizationDetail() {
   const pendingMembers = members.filter((m) => m.status === "pending");
   const approvedMembers = members.filter((m) => m.status === "approved");
   const canEditBio = isFounder || isAdmin || isSuperAdmin;
+
+  const eventDates = events.map((e) => parseISO(e.event_date));
+  const selectedEvents = selectedDate
+    ? events.filter((e) => isSameDay(parseISO(e.event_date), selectedDate))
+    : [];
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -274,9 +511,6 @@ export default function OrganizationDetail() {
         <div className="flex-1">
           <h1 className="text-3xl font-bold font-[family-name:var(--font-heading)]">{org.name}</h1>
           <div className="flex items-center gap-2 mt-3">
-            <Button variant="outline" size="sm" onClick={() => navigate(`/organizations/${id}/calendar`)}>
-              <CalendarDays className="mr-2 h-4 w-4" /> Calendar
-            </Button>
             {isFounder && (
               <>
                 <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
@@ -330,146 +564,395 @@ export default function OrganizationDetail() {
         </div>
       </div>
 
-      {/* Bio — standalone section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>About</span>
-            {canEditBio && !editingBio && (
-              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingBio(true)}>
-                <Pencil className="h-3.5 w-3.5" />
-              </Button>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {editingBio ? (
-            <div className="space-y-2">
-              <Textarea
-                value={bioText}
-                onChange={(e) => setBioText(e.target.value)}
-                placeholder="Write a bio for this organization..."
-                className="min-h-[100px] resize-none"
-                maxLength={2000}
-              />
-              <div className="flex gap-2">
-                <Button size="sm" onClick={handleSaveBio}>Save</Button>
-                <Button size="sm" variant="outline" onClick={() => { setEditingBio(false); setBioText(org.description || ""); }}>Cancel</Button>
-              </div>
-            </div>
-          ) : (
-            <p className="text-muted-foreground whitespace-pre-wrap">{org.description || "No description yet."}</p>
+      {/* Tabs */}
+      <Tabs defaultValue="about">
+        <TabsList>
+          <TabsTrigger value="about">About</TabsTrigger>
+          <TabsTrigger value="members">Members</TabsTrigger>
+          <TabsTrigger value="posts">Recently Posted</TabsTrigger>
+          {isSubscribed && <TabsTrigger value="calendar">Calendar</TabsTrigger>}
+          {isSubscribed && <TabsTrigger value="chat">Chat</TabsTrigger>}
+        </TabsList>
+
+        {/* About Tab */}
+        <TabsContent value="about" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>About</span>
+                {canEditBio && !editingBio && (
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingBio(true)}>
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {editingBio ? (
+                <div className="space-y-2">
+                  <Textarea
+                    value={bioText}
+                    onChange={(e) => setBioText(e.target.value)}
+                    placeholder="Write a bio for this organization..."
+                    className="min-h-[100px] resize-none"
+                    maxLength={2000}
+                  />
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleSaveBio}>Save</Button>
+                    <Button size="sm" variant="outline" onClick={() => { setEditingBio(false); setBioText(org.description || ""); }}>Cancel</Button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-muted-foreground whitespace-pre-wrap">{org.description || "No description yet."}</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Members Tab */}
+        <TabsContent value="members" className="space-y-6">
+          {/* Pending Requests */}
+          {canManage && pendingMembers.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-4 w-4" />
+                  Pending Requests ({pendingMembers.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {pendingMembers.map((m) => (
+                  <div key={m.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={m.profile?.avatar_url || ""} />
+                        <AvatarFallback className="text-xs">{m.profile?.full_name?.[0] || "?"}</AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm font-medium">{m.profile?.full_name || "Unknown"}</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => handleMembership(m.id, "approved")}>
+                        <Check className="h-3 w-3 mr-1" /> Approve
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => handleMembership(m.id, "rejected")}>
+                        <X className="h-3 w-3 mr-1" /> Reject
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
           )}
-        </CardContent>
-      </Card>
 
-      {/* Pending Requests */}
-      {canManage && pendingMembers.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              Pending Requests ({pendingMembers.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {pendingMembers.map((m) => (
-              <div key={m.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={m.profile?.avatar_url || ""} />
-                    <AvatarFallback className="text-xs">{m.profile?.full_name?.[0] || "?"}</AvatarFallback>
-                  </Avatar>
-                  <span className="text-sm font-medium">{m.profile?.full_name || "Unknown"}</span>
+          <Card>
+            <CardHeader>
+              <CardTitle>Members ({approvedMembers.length})</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {approvedMembers.map((m) => (
+                <div key={m.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={m.profile?.avatar_url || ""} />
+                      <AvatarFallback className="text-xs">{m.profile?.full_name?.[0] || "?"}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <span className="text-sm font-medium">{m.profile?.full_name || "Unknown"}</span>
+                      <Badge variant="outline" className="ml-2 text-xs">
+                        {m.role === "founder" ? "🏆 Founder" : m.role === "org_admin" ? "Admin" : "Member"}
+                      </Badge>
+                    </div>
+                  </div>
+                  {isFounder && m.user_id !== user?.id && (
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={m.role || "member"}
+                        onValueChange={(v) => handleRoleChange(m.user_id, v as Enums<"app_role">)}
+                      >
+                        <SelectTrigger className="w-28 h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="member">Member</SelectItem>
+                          <SelectItem value="org_admin">Admin</SelectItem>
+                          <SelectItem value="founder">Founder</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => handleRemove(m.user_id)}>
+                        <UserMinus className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={() => handleMembership(m.id, "approved")}>
-                    <Check className="h-3 w-3 mr-1" /> Approve
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => handleMembership(m.id, "rejected")}>
-                    <X className="h-3 w-3 mr-1" /> Reject
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+              ))}
+              {approvedMembers.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">No members yet.</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      {/* Members */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Members ({approvedMembers.length})</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {approvedMembers.map((m) => (
-            <div key={m.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={m.profile?.avatar_url || ""} />
-                  <AvatarFallback className="text-xs">{m.profile?.full_name?.[0] || "?"}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <span className="text-sm font-medium">{m.profile?.full_name || "Unknown"}</span>
-                  <Badge variant="outline" className="ml-2 text-xs">{m.role === "founder" ? "🏆 Founder" : m.role || "member"}</Badge>
+        {/* Recently Posted Tab */}
+        <TabsContent value="posts">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Recently Posted
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {orgPosts.map((post) => (
+                <div key={post.id} className="p-3 rounded-lg border bg-muted/30">
+                  <div className="flex items-start justify-between">
+                    <h4 className="text-sm font-medium">{post.title}</h4>
+                    <span className="text-xs text-muted-foreground flex items-center gap-1 shrink-0 ml-2">
+                      <Clock className="h-3 w-3" />
+                      {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{post.content}</p>
+                  <p className="text-xs text-muted-foreground mt-1">by {post.profile_name || "Unknown"}</p>
                 </div>
-              </div>
-              {canManage && m.user_id !== user?.id && (
-                <div className="flex items-center gap-2">
-                  <Select
-                    value={m.role || "member"}
-                    onValueChange={(v) => handleRoleChange(m.user_id, v as Enums<"app_role">)}
-                  >
-                    <SelectTrigger className="w-32 h-8 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="member">Member</SelectItem>
-                      <SelectItem value="moderator">Moderator</SelectItem>
-                      <SelectItem value="org_admin">Admin</SelectItem>
-                      {(isFounder || isSuperAdmin) && <SelectItem value="founder">Founder</SelectItem>}
-                    </SelectContent>
-                  </Select>
-                  <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => handleRemove(m.user_id)}>
-                    <UserMinus className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
+              ))}
+              {orgPosts.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">No posts yet.</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Calendar Tab (subscribers only) */}
+        {isSubscribed && (
+          <TabsContent value="calendar" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Calendar</h2>
+              {(isFounder || isAdmin) && (
+                <Dialog open={calDialogOpen} onOpenChange={setCalDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm">
+                      <Plus className="mr-2 h-4 w-4" /> Add Event
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Add Event</DialogTitle>
+                      <DialogDescription>Schedule a meeting, gathering, or event.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 mt-4">
+                      <div className="space-y-2">
+                        <Label>Title</Label>
+                        <Input value={calTitle} onChange={(e) => setCalTitle(e.target.value)} placeholder="Event title" maxLength={200} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Description</Label>
+                        <Textarea value={calDesc} onChange={(e) => setCalDesc(e.target.value)} placeholder="Details..." className="min-h-[80px] resize-none" maxLength={2000} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Date</Label>
+                          <Input type="date" value={calDate} onChange={(e) => setCalDate(e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Time (optional)</Label>
+                          <Input type="time" value={calTime} onChange={(e) => setCalTime(e.target.value)} />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Location (optional)</Label>
+                        <Input value={calLocation} onChange={(e) => setCalLocation(e.target.value)} placeholder="Where?" maxLength={200} />
+                      </div>
+                      <Button onClick={handleCreateEvent} disabled={calCreating || !calTitle.trim() || !calDate} className="w-full">
+                        {calCreating ? "Creating..." : "Create Event"}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               )}
             </div>
-          ))}
-          {approvedMembers.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-4">No members yet.</p>
-          )}
-        </CardContent>
-      </Card>
 
-      {/* Recently Posted */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Recently Posted
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {orgPosts.map((post) => (
-            <div key={post.id} className="p-3 rounded-lg border bg-muted/30">
-              <div className="flex items-start justify-between">
-                <h4 className="text-sm font-medium">{post.title}</h4>
-                <span className="text-xs text-muted-foreground flex items-center gap-1 shrink-0 ml-2">
-                  <Clock className="h-3 w-3" />
-                  {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-                </span>
+            <div className="grid gap-6 md:grid-cols-[auto_1fr]">
+              <Card className="w-fit">
+                <CardContent className="p-3">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    modifiers={{ hasEvent: eventDates }}
+                    modifiersClassNames={{ hasEvent: "bg-primary/20 font-bold text-primary" }}
+                  />
+                </CardContent>
+              </Card>
+
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold">
+                  {selectedDate ? format(selectedDate, "MMMM d, yyyy") : "Select a date"}
+                </h3>
+                {selectedEvents.length > 0 ? (
+                  selectedEvents.map((event) => (
+                    <Card key={event.id}>
+                      <CardHeader className="pb-2">
+                        <div className="flex items-start justify-between">
+                          <CardTitle className="text-base">{event.title}</CardTitle>
+                          {(isFounder || isAdmin) && (
+                            <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => handleDeleteEvent(event.id)}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        {event.description && <p className="text-sm text-muted-foreground whitespace-pre-wrap">{event.description}</p>}
+                        <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1"><CalendarIcon className="h-3 w-3" />{format(parseISO(event.event_date), "MMM d, yyyy")}</span>
+                          {event.event_time && <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{event.event_time}</span>}
+                          {event.location && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{event.location}</span>}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground py-4">No events on this date.</p>
+                )}
+
+                <h4 className="text-sm font-medium text-muted-foreground pt-4">All Upcoming Events</h4>
+                {events.filter((e) => new Date(e.event_date) >= new Date(new Date().toDateString())).length > 0 ? (
+                  events
+                    .filter((e) => new Date(e.event_date) >= new Date(new Date().toDateString()))
+                    .map((event) => (
+                      <div key={event.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <span className="text-xs font-bold text-primary">{format(parseISO(event.event_date), "dd")}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{event.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {format(parseISO(event.event_date), "MMM d")}
+                            {event.event_time ? ` · ${event.event_time}` : ""}
+                            {event.location ? ` · ${event.location}` : ""}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">No upcoming events.</p>
+                )}
               </div>
-              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{post.content}</p>
-              <p className="text-xs text-muted-foreground mt-1">by {post.profile_name || "Unknown"}</p>
             </div>
-          ))}
-          {orgPosts.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-4">No posts yet.</p>
-          )}
-        </CardContent>
-      </Card>
+          </TabsContent>
+        )}
+
+        {/* Chat Tab (subscribers only) */}
+        {isSubscribed && (
+          <TabsContent value="chat">
+            <div className="flex h-[calc(100vh-16rem)] gap-4">
+              {/* Channel sidebar */}
+              <div className="w-52 flex flex-col gap-2 shrink-0">
+                <div className="flex-1 overflow-auto space-y-1">
+                  {channels.map((ch) => (
+                    <Button
+                      key={ch.id}
+                      variant={selectedChannel === ch.id ? "secondary" : "ghost"}
+                      size="sm"
+                      className="w-full justify-start text-sm"
+                      onClick={() => setSelectedChannel(ch.id)}
+                    >
+                      <Hash className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+                      <span className="truncate">{ch.name}</span>
+                    </Button>
+                  ))}
+                </div>
+
+                <div className="flex gap-1">
+                  <Input
+                    placeholder="New channel..."
+                    value={newChannelName}
+                    onChange={(e) => setNewChannelName(e.target.value)}
+                    className="text-sm h-8"
+                    onKeyDown={(e) => e.key === "Enter" && handleCreateChannel()}
+                  />
+                  <Button size="icon" className="h-8 w-8 shrink-0" onClick={handleCreateChannel} disabled={!newChannelName.trim()}>
+                    <Plus className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Chat area */}
+              <Card className="flex-1 flex flex-col overflow-hidden">
+                {selectedChannel ? (
+                  <>
+                    <div className="p-4 border-b flex items-center gap-2">
+                      <Hash className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">{currentChannel?.name}</span>
+                      <Badge variant="outline" className="text-xs ml-auto">{messages.length} messages</Badge>
+                    </div>
+
+                    <ScrollArea className="flex-1 p-4">
+                      <div className="space-y-4">
+                        <AnimatePresence>
+                          {messages.map((msg) => (
+                            <motion.div
+                              key={msg.id}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="flex gap-3"
+                            >
+                              <Avatar className="h-8 w-8 shrink-0">
+                                <AvatarImage src={msg.profile?.avatar_url || ""} />
+                                <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                                  {msg.profile?.full_name?.[0]?.toUpperCase() || "?"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0">
+                                <div className="flex items-baseline gap-2">
+                                  <span className="text-sm font-medium">{msg.profile?.full_name || "Unknown"}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {new Date(msg.created_at).toLocaleDateString()} {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                  </span>
+                                </div>
+                                <p className="text-sm break-words">{msg.content}</p>
+                                {msg.attachment_url && (
+                                  <AttachmentPreview url={msg.attachment_url} name={msg.attachment_name || "file"} type={msg.attachment_type || ""} />
+                                )}
+                              </div>
+                            </motion.div>
+                          ))}
+                        </AnimatePresence>
+                        <div ref={scrollRef} />
+                      </div>
+                    </ScrollArea>
+
+                    <div className="p-4 border-t">
+                      <form
+                        onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}
+                        className="flex items-center gap-2"
+                      >
+                        <FileAttachmentButton file={attachedFile} onFileSelect={setAttachedFile} disabled={sending} />
+                        <Input
+                          placeholder={`Message #${currentChannel?.name || ""}...`}
+                          value={newMessage}
+                          onChange={(e) => setNewMessage(e.target.value)}
+                          className="flex-1"
+                        />
+                        <Button type="submit" size="icon" disabled={sending || (!newMessage.trim() && !attachedFile)}>
+                          <Send className="h-4 w-4" />
+                        </Button>
+                      </form>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                    <div className="text-center">
+                      <Hash className="h-8 w-8 mx-auto mb-2" />
+                      <p>Select or create a channel to start chatting</p>
+                    </div>
+                  </div>
+                )}
+              </Card>
+            </div>
+          </TabsContent>
+        )}
+      </Tabs>
     </div>
   );
 }

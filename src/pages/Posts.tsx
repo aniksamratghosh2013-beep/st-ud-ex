@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useHasOrganization } from "@/hooks/use-has-organization";
-import { JoinOrgPrompt } from "@/components/JoinOrgPrompt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,19 +9,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, Clock } from "lucide-react";
@@ -45,7 +34,6 @@ interface PostWithAuthor {
 export default function Posts() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const hasOrg = useHasOrganization();
   const [posts, setPosts] = useState<PostWithAuthor[]>([]);
   const [myOrgs, setMyOrgs] = useState<Tables<"organizations">[]>([]);
   const [loading, setLoading] = useState(true);
@@ -139,7 +127,6 @@ export default function Posts() {
       setPostAs("personal");
       setDialogOpen(false);
 
-      // Fire-and-forget: moderate the post content
       if (postData) {
         supabase.functions.invoke("moderate-message", {
           body: {
@@ -147,10 +134,6 @@ export default function Posts() {
             content: `${insertData.title} ${insertData.content}`,
             source: "post",
           },
-        }).then(({ data }) => {
-          if (data?.banned) {
-            toast({ title: "Your account has been suspended", description: "Your content violated community guidelines.", variant: "destructive" });
-          }
         }).catch(console.error);
       }
     }
@@ -164,10 +147,6 @@ export default function Posts() {
       toast({ title: "Post deleted" });
     }
   };
-
-  if (hasOrg === false) {
-    return <JoinOrgPrompt feature="Posts" />;
-  }
 
   if (loading) {
     return (
