@@ -437,46 +437,44 @@ export default function People() {
       </motion.div>
 
       {/* Profile Dialog */}
-      <Dialog open={!!selectedProfile} onOpenChange={() => setSelectedProfile(null)}>
-        <DialogContent className="max-w-md">
+      <Dialog open={!!selectedProfile} onOpenChange={(open) => { if (!open) setSelectedProfile(null); }}>
+        <DialogContent className="max-w-md" onAnimationEnd={() => { if (!selectedProfile) return; }}>
+          <DialogHeader>
+            <DialogTitle>Profile</DialogTitle>
+          </DialogHeader>
           {selectedProfile && (
-            <>
-              <DialogHeader>
-                <DialogTitle>Profile</DialogTitle>
-              </DialogHeader>
-              <div className="flex flex-col items-center gap-4 py-4">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage src={selectedProfile.avatar_url || ""} />
-                  <AvatarFallback className="text-2xl bg-primary/10 text-primary font-bold">
-                    {selectedProfile.full_name?.[0]?.toUpperCase() || "?"}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="text-center">
-                  <h2 className="text-xl font-bold">{selectedProfile.full_name || "Unknown"}</h2>
-                  <p className="text-sm text-muted-foreground">{selectedProfile.bio || "No bio"}</p>
-                </div>
-
-                {selectedProfile.skills && selectedProfile.skills.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {selectedProfile.skills.map((s, i) => (
-                      <Badge key={i} variant="secondary" className="text-xs">{s}</Badge>
-                    ))}
-                  </div>
-                )}
-
-                {selectedProfile.interests && selectedProfile.interests.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {selectedProfile.interests.map((s, i) => (
-                      <Badge key={i} variant="outline" className="text-xs">{s}</Badge>
-                    ))}
-                  </div>
-                )}
-
-                <Button size="icon" onClick={() => { setSelectedProfile(null); setSelectedUser(selectedProfile.id); setActiveTab("chats"); }}>
-                  <MessageSquare className="h-4 w-4" />
-                </Button>
+            <div className="flex flex-col items-center gap-4 py-4">
+              <Avatar className="h-20 w-20">
+                <AvatarImage src={selectedProfile.avatar_url || ""} />
+                <AvatarFallback className="text-2xl bg-primary/10 text-primary font-bold">
+                  {selectedProfile.full_name?.[0]?.toUpperCase() || "?"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="text-center">
+                <h2 className="text-xl font-bold">{selectedProfile.full_name || "Unknown"}</h2>
+                <p className="text-sm text-muted-foreground">{selectedProfile.bio || "No bio"}</p>
               </div>
-            </>
+
+              {selectedProfile.skills && selectedProfile.skills.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {selectedProfile.skills.map((s, i) => (
+                    <Badge key={i} variant="secondary" className="text-xs">{s}</Badge>
+                  ))}
+                </div>
+              )}
+
+              {selectedProfile.interests && selectedProfile.interests.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {selectedProfile.interests.map((s, i) => (
+                    <Badge key={i} variant="outline" className="text-xs">{s}</Badge>
+                  ))}
+                </div>
+              )}
+
+              <Button size="icon" onClick={() => { setSelectedProfile(null); setSelectedUser(selectedProfile.id); setActiveTab("chats"); }}>
+                <MessageSquare className="h-4 w-4" />
+              </Button>
+            </div>
           )}
         </DialogContent>
       </Dialog>
