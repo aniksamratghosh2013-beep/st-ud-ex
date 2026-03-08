@@ -302,6 +302,7 @@ export default function People() {
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="chats">Chats</TabsTrigger>
         </TabsList>
+        </div>
 
         {/* Users Tab */}
         <TabsContent value="users" className="space-y-6">
