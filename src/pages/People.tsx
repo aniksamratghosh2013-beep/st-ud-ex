@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useHasOrganization } from "@/hooks/use-has-organization";
-import { JoinOrgPrompt } from "@/components/JoinOrgPrompt";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +20,6 @@ interface FollowRecord {
 export default function People() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const hasOrg = useHasOrganization();
   const navigate = useNavigate();
   const [profiles, setProfiles] = useState<Tables<"profiles">[]>([]);
   const [search, setSearch] = useState("");
@@ -46,7 +43,6 @@ export default function People() {
       setMyFollowing(new Set((follows as FollowRecord[] || []).map((f: any) => f.following_id)));
     }
 
-    // Get follower counts
     const { data: allFollows } = await (supabase as any).from("follows").select("following_id");
     const counts: Record<string, number> = {};
     (allFollows || []).forEach((f: any) => {
@@ -92,10 +88,6 @@ export default function People() {
      p.bio?.toLowerCase().includes(search.toLowerCase()))
   );
 
-  if (hasOrg === false) {
-    return <JoinOrgPrompt feature="People" />;
-  }
-
   if (loading) {
     return <div className="flex items-center justify-center h-64">
       <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -105,7 +97,7 @@ export default function People() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold font-[family-name:var(--font-heading)]">People</h1>
+        <h1 className="text-3xl font-bold font-[family-name:var(--font-heading)]">DM's</h1>
         <Badge variant="outline">{profiles.length - 1} users</Badge>
       </div>
 

@@ -2,8 +2,7 @@ import {
   LayoutDashboard,
   Building2,
   UserCircle,
-  MessageSquare,
-  Users,
+  Mail,
   Settings,
   FileText,
 } from "lucide-react";
@@ -24,10 +23,9 @@ import {
 
 const mainNav = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Posts", url: "/posts", icon: FileText },
   { title: "Organizations", url: "/organizations", icon: Building2 },
-  { title: "Chat", url: "/chat", icon: MessageSquare },
-  { title: "People", url: "/people", icon: Users },
+  { title: "Posts", url: "/posts", icon: FileText },
+  { title: "DM's", url: "/messages", icon: Mail },
   { title: "Profile", url: "/profile", icon: UserCircle },
 ];
 

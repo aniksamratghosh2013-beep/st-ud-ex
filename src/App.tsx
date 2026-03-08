@@ -13,10 +13,8 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Organizations from "./pages/Organizations";
 import OrganizationDetail from "./pages/OrganizationDetail";
-import OrganizationCalendar from "./pages/OrganizationCalendar";
 import Posts from "./pages/Posts";
 import Admin from "./pages/Admin";
-import Chat from "./pages/Chat";
 import People from "./pages/People";
 import DirectMessages from "./pages/DirectMessages";
 import NotFound from "./pages/NotFound";
@@ -38,9 +36,7 @@ const App = () => (
               <Route path="/profile" element={<ProtectedRoute><AppLayout><Profile /></AppLayout></ProtectedRoute>} />
               <Route path="/organizations" element={<ProtectedRoute><AppLayout><Organizations /></AppLayout></ProtectedRoute>} />
               <Route path="/organizations/:id" element={<ProtectedRoute><AppLayout><OrganizationDetail /></AppLayout></ProtectedRoute>} />
-              <Route path="/organizations/:id/calendar" element={<ProtectedRoute><AppLayout><OrganizationCalendar /></AppLayout></ProtectedRoute>} />
               <Route path="/posts" element={<ProtectedRoute><AppLayout><Posts /></AppLayout></ProtectedRoute>} />
-              <Route path="/chat" element={<ProtectedRoute><AppLayout><Chat /></AppLayout></ProtectedRoute>} />
               <Route path="/people" element={<ProtectedRoute><AppLayout><People /></AppLayout></ProtectedRoute>} />
               <Route path="/messages" element={<ProtectedRoute><AppLayout><DirectMessages /></AppLayout></ProtectedRoute>} />
               <Route path="/messages/:userId" element={<ProtectedRoute><AppLayout><DirectMessages /></AppLayout></ProtectedRoute>} />

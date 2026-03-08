@@ -3,11 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
+} from "@/components/ui/dialog";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { Sun, Moon, Palette, Check, LogOut, Type, RectangleHorizontal, Maximize } from "lucide-react";
+import { Sun, Moon, Palette, Check, LogOut, Type, RectangleHorizontal, Maximize, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -84,7 +88,10 @@ export default function Settings() {
     Number(localStorage.getItem("syncup-content-width")) || 672
   );
 
-  // Apply on mount and change
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [deleting, setDeleting] = useState(false);
+
   useEffect(() => {
     const scheme = COLOR_SCHEMES.find((s) => s.id === activeScheme);
     if (scheme) applyColorScheme(scheme, isDark);
@@ -141,6 +148,24 @@ export default function Settings() {
     applyFontSize(1);
     applyRadius("0.75rem");
     toast({ title: "All settings reset to defaults" });
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirm !== "DELETE") return;
+    setDeleting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("delete-account");
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      
+      toast({ title: "Account deleted", description: "Your account and all data have been permanently removed." });
+      await supabase.auth.signOut();
+      navigate("/auth");
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Failed to delete account", variant: "destructive" });
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -331,6 +356,52 @@ export default function Settings() {
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign Out
               </Button>
+            </div>
+
+            <div className="border-t pt-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-destructive">Delete Account</p>
+                  <p className="text-sm text-muted-foreground">Permanently delete your account and all associated data.</p>
+                </div>
+                <Dialog open={deleteOpen} onOpenChange={(open) => { setDeleteOpen(open); setDeleteConfirm(""); }}>
+                  <DialogTrigger asChild>
+                    <Button variant="destructive" size="sm">
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete Account
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Delete Your Account</DialogTitle>
+                      <DialogDescription>
+                        This action is <strong>permanent and irreversible</strong>. All your data including profile, posts, messages, 
+                        organizations you created, and all associated content will be permanently erased.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <p className="text-sm text-muted-foreground">
+                        Type <strong>DELETE</strong> to confirm account deletion.
+                      </p>
+                      <Input
+                        value={deleteConfirm}
+                        onChange={(e) => setDeleteConfirm(e.target.value)}
+                        placeholder='Type "DELETE" to confirm'
+                      />
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
+                      <Button
+                        variant="destructive"
+                        onClick={handleDeleteAccount}
+                        disabled={deleteConfirm !== "DELETE" || deleting}
+                      >
+                        {deleting ? "Deleting..." : "Delete My Account Forever"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </div>
           </CardContent>
         </Card>
