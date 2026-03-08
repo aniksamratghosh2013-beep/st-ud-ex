@@ -16,6 +16,10 @@ import { Plus, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { Tables } from "@/integrations/supabase/types";
 import { sanitizeError } from "@/lib/sanitize-error";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function Organizations() {
   const { user } = useAuth();
@@ -29,6 +33,8 @@ export default function Organizations() {
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [confirmSubOrg, setConfirmSubOrg] = useState<string | null>(null);
+  const [confirmUnsubOrg, setConfirmUnsubOrg] = useState<string | null>(null);
 
   const fetchOrgs = async () => {
     const { data } = await supabase
@@ -99,6 +105,24 @@ export default function Organizations() {
       toast({ title: "Subscription request sent", description: "Waiting for admin approval." });
       fetchOrgs();
     }
+    setConfirmSubOrg(null);
+  };
+
+  const handleUnsubscribe = async (orgId: string) => {
+    if (!user) return;
+    const { error } = await supabase
+      .from("organization_memberships")
+      .delete()
+      .eq("organization_id", orgId)
+      .eq("user_id", user.id);
+
+    if (error) {
+      toast({ title: "Error", description: sanitizeError(error), variant: "destructive" });
+    } else {
+      toast({ title: "Unsubscribed successfully" });
+      fetchOrgs();
+    }
+    setConfirmUnsubOrg(null);
   };
 
   const filtered = orgs.filter((o) =>
@@ -174,14 +198,32 @@ export default function Organizations() {
             <CardContent>
               <div className="flex items-center justify-center">
                 {myMemberships[org.id] === "approved" ? (
-                  <Badge>Subscribed</Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge>Subscribed</Badge>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => { e.stopPropagation(); setConfirmUnsubOrg(org.id); }}
+                    >
+                      Unsubscribe
+                    </Button>
+                  </div>
                 ) : myMemberships[org.id] === "pending" ? (
-                  <Badge variant="secondary">Pending</Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary">Pending</Badge>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => { e.stopPropagation(); setConfirmUnsubOrg(org.id); }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
                 ) : (
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={(e) => { e.stopPropagation(); handleSubscribe(org.id); }}
+                    onClick={(e) => { e.stopPropagation(); setConfirmSubOrg(org.id); }}
                   >
                     Subscribe
                   </Button>
@@ -197,6 +239,38 @@ export default function Organizations() {
           <p>No organizations found.</p>
         </div>
       )}
+
+      {/* Subscribe confirmation */}
+      <AlertDialog open={!!confirmSubOrg} onOpenChange={(open) => !open && setConfirmSubOrg(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Subscribe to Organization</AlertDialogTitle>
+            <AlertDialogDescription>
+              Upon subscribing to an organization, you get access to the org. chat, event calendar, and will receive notifications regarding new posts or updates.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => confirmSubOrg && handleSubscribe(confirmSubOrg)}>Subscribe</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Unsubscribe confirmation */}
+      <AlertDialog open={!!confirmUnsubOrg} onOpenChange={(open) => !open && setConfirmUnsubOrg(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsubscribe from Organization</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to unsubscribe? You will lose access to the org. chat, event calendar, and notifications.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => confirmUnsubOrg && handleUnsubscribe(confirmUnsubOrg)}>Unsubscribe</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
