@@ -480,6 +480,7 @@ export default function People() {
           </div>
         </TabsContent>
       </Tabs>
+      </motion.div>
 
       {/* Profile Dialog */}
       <Dialog open={!!selectedProfile} onOpenChange={() => setSelectedProfile(null)}>
