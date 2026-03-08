@@ -244,7 +244,7 @@ export default function Organizations() {
       <AlertDialog open={!!confirmSubOrg} onOpenChange={(open) => !open && setConfirmSubOrg(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Subscribe to Organization</AlertDialogTitle>
+            <AlertDialogTitle>Subscribe to {orgs.find(o => o.id === confirmSubOrg)?.name}?</AlertDialogTitle>
             <AlertDialogDescription>
               Upon subscribing to an organization, you get access to the org. chat, event calendar, and will receive notifications regarding new posts or updates.
             </AlertDialogDescription>
