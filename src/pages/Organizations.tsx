@@ -198,12 +198,13 @@ export default function Organizations() {
             <CardContent>
               <div className="flex items-center justify-center">
                 {myMemberships[org.id] === "approved" ? (
-                  <Badge
-                    className="cursor-pointer hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                  <Button
+                    size="sm"
+                    className="bg-primary text-primary-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors"
                     onClick={(e) => { e.stopPropagation(); setConfirmUnsubOrg(org.id); }}
                   >
                     Subscribed
-                  </Badge>
+                  </Button>
                 ) : myMemberships[org.id] === "pending" ? (
                   <Badge
                     variant="secondary"
