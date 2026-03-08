@@ -139,7 +139,7 @@ export default function Organizations() {
                   {getWordCount(newDesc)} / 40–100 words
                 </span>
               </div>
-              <Button onClick={handleCreate} disabled={creating || !newName.trim()} className="w-full">
+              <Button onClick={handleCreate} disabled={creating || !newName.trim() || getWordCount(newDesc) < 40 || getWordCount(newDesc) > 100} className="w-full">
                 {creating ? "Creating..." : "Create Organization"}
               </Button>
             </div>
