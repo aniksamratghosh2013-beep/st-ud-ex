@@ -622,7 +622,7 @@ export default function OrganizationDetail() {
               ) : org.description ? (
                 <p className="text-muted-foreground whitespace-pre-wrap">{org.description}</p>
               ) : (
-                <p className="text-sm italic text-muted-foreground">Write about what your organization is dedicated towards, and mention your organization's instagram account!</p>
+                <p className="text-sm italic text-muted-foreground">Tell us what your organization is dedicated to, and mention the instagram account ☺︎</p>
               )}
             </CardContent>
           </Card>
