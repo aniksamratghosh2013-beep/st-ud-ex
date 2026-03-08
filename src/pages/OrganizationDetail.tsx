@@ -577,15 +577,13 @@ export default function OrganizationDetail() {
         {/* About Tab */}
         <TabsContent value="about" className="space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-center text-center">
-                <span>About</span>
-                {canEditBio && !editingBio && (
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingBio(true)}>
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                )}
-              </CardTitle>
+            <CardHeader className="relative">
+              <CardTitle className="text-center">About</CardTitle>
+              {canEditBio && !editingBio && (
+                <Button size="icon" variant="ghost" className="h-7 w-7 absolute right-4 top-4" onClick={() => setEditingBio(true)}>
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
               {editingBio ? (
