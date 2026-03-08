@@ -613,7 +613,7 @@ export default function OrganizationDetail() {
           {canManage && pendingMembers.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center justify-center gap-2">
                   <Shield className="h-4 w-4" />
                   Pending Requests ({pendingMembers.length})
                 </CardTitle>
