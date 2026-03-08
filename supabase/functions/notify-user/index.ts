@@ -163,7 +163,13 @@ serve(async (req) => {
     });
 
     const result = await res.json();
-    if (!res.ok) throw new Error(`Resend error: ${res.status}`);
+    if (!res.ok) {
+      console.error('Resend API error:', res.status, JSON.stringify(result));
+      // Don't throw - return success anyway since the DM was already sent
+      return new Response(JSON.stringify({ success: false, warning: 'Email notification skipped' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
