@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Camera, Save } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { sanitizeError } from "@/lib/sanitize-error";
+import { motion } from "framer-motion";
 
 export default function Profile() {
   const { user } = useAuth();
@@ -93,8 +94,11 @@ export default function Profile() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <h1 className="text-3xl font-bold font-[family-name:var(--font-heading)]">Profile</h1>
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+        <h1 className="text-3xl font-bold font-[family-name:var(--font-heading)]">Profile</h1>
+      </motion.div>
 
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
       <Card>
         <CardHeader>
           <CardTitle>Your Information</CardTitle>
@@ -146,6 +150,7 @@ export default function Profile() {
           </Button>
         </CardContent>
       </Card>
+      </motion.div>
     </div>
   );
 }
