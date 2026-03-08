@@ -319,7 +319,7 @@ export default function DirectMessages() {
             <div className="text-center">
               <MessageSquare className="h-8 w-8 mx-auto mb-2" />
               <p>Select a conversation or find someone to message</p>
-              <Button variant="link" onClick={() => navigate("/people")} className="mt-2">Browse People</Button>
+              <Button variant="link" onClick={() => navigate("/people")} className="mt-2">Browse DM's</Button>
             </div>
           </div>
         )}
