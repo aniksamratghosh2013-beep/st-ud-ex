@@ -254,7 +254,7 @@ export default function Organizations() {
       <AlertDialog open={!!confirmUnsubOrg} onOpenChange={(open) => !open && setConfirmUnsubOrg(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Unsubscribe from Organization</AlertDialogTitle>
+            <AlertDialogTitle>Unsubscribe from {orgs.find(o => o.id === confirmUnsubOrg)?.name}?</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to unsubscribe? You will lose access to the org. chat, event calendar, and notifications.
             </AlertDialogDescription>
