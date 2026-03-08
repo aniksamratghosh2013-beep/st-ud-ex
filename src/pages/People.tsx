@@ -362,7 +362,7 @@ export default function People() {
                 </CardContent>
               </Card>
             ))}
-          </div>
+          </motion.div>
 
           {filtered.length === 0 && (
             <div className="text-center py-12 text-muted-foreground">No people found.</div>
