@@ -198,14 +198,32 @@ export default function Organizations() {
             <CardContent>
               <div className="flex items-center justify-center">
                 {myMemberships[org.id] === "approved" ? (
-                  <Badge>Subscribed</Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge>Subscribed</Badge>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => { e.stopPropagation(); setConfirmUnsubOrg(org.id); }}
+                    >
+                      Unsubscribe
+                    </Button>
+                  </div>
                 ) : myMemberships[org.id] === "pending" ? (
-                  <Badge variant="secondary">Pending</Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary">Pending</Badge>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => { e.stopPropagation(); setConfirmUnsubOrg(org.id); }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
                 ) : (
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={(e) => { e.stopPropagation(); handleSubscribe(org.id); }}
+                    onClick={(e) => { e.stopPropagation(); setConfirmSubOrg(org.id); }}
                   >
                     Subscribe
                   </Button>
