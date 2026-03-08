@@ -566,7 +566,7 @@ export default function OrganizationDetail() {
 
       {/* Tabs */}
       <Tabs defaultValue="about">
-        <TabsList>
+        <TabsList className="w-full justify-center">
           <TabsTrigger value="about">About</TabsTrigger>
           <TabsTrigger value="members">Members</TabsTrigger>
           <TabsTrigger value="posts">Recently Posted</TabsTrigger>
