@@ -223,7 +223,15 @@ export default function Posts() {
 
       <div className="space-y-4">
         {posts.map((post) => (
-          <Card key={post.id}>
+          <Card
+            key={post.id}
+            className={post.organization_id ? "cursor-pointer hover:shadow-md transition-shadow" : ""}
+            onClick={() => {
+              if (post.organization_id) {
+                navigate(`/organizations/${post.organization_id}`);
+              }
+            }}
+          >
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
