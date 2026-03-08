@@ -337,7 +337,7 @@ export default function People() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1 text-sm text-muted-foreground">
                       <Users className="h-3.5 w-3.5" />
-                      <span>{followerCounts[profile.id] || 0} followers</span>
+                      <span>{followerCounts[profile.id] || 0} {(followerCounts[profile.id] || 0) === 1 ? "follower" : "followers"}</span>
                     </div>
                     <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                       <Button size="sm" variant="outline" onClick={() => { setSelectedUser(profile.id); }}>
