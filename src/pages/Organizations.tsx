@@ -96,13 +96,13 @@ export default function Organizations() {
     const { error } = await supabase.from("organization_memberships").insert({
       organization_id: orgId,
       user_id: user.id,
-      status: "pending",
+      status: "approved",
     });
 
     if (error) {
       toast({ title: "Error", description: sanitizeError(error), variant: "destructive" });
     } else {
-      toast({ title: "Subscription request sent", description: "Waiting for admin approval." });
+      toast({ title: "Subscribed!" });
       fetchOrgs();
     }
     setConfirmSubOrg(null);
