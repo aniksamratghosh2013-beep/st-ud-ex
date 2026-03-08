@@ -577,15 +577,13 @@ export default function OrganizationDetail() {
         {/* About Tab */}
         <TabsContent value="about" className="space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>About</span>
-                {canEditBio && !editingBio && (
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingBio(true)}>
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                )}
-              </CardTitle>
+            <CardHeader className="relative">
+              <CardTitle className="text-center">About</CardTitle>
+              {canEditBio && !editingBio && (
+                <Button size="icon" variant="ghost" className="h-7 w-7 absolute right-4 top-4" onClick={() => setEditingBio(true)}>
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
               {editingBio ? (
@@ -646,7 +644,7 @@ export default function OrganizationDetail() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Members ({approvedMembers.length})</CardTitle>
+              <CardTitle className="text-center">Members ({approvedMembers.length})</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {approvedMembers.map((m) => (
@@ -696,7 +694,7 @@ export default function OrganizationDetail() {
         <TabsContent value="posts">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center justify-center gap-2">
                 <FileText className="h-4 w-4" />
                 Recently Posted
               </CardTitle>
