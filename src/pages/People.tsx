@@ -47,6 +47,7 @@ export default function People() {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("users");
 
   // Users tab state
   const [profiles, setProfiles] = useState<Tables<"profiles">[]>([]);
