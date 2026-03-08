@@ -292,7 +292,7 @@ export default function People() {
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {filtered.map((profile) => (
                   <Card key={profile.id} className="cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={() => { setSelectedProfile(profile); setProfileDialogOpen(true); }}>
+                    >
                     <CardHeader className="flex flex-row items-center gap-3">
                       <Avatar className="h-12 w-12">
                         <AvatarImage src={profile.avatar_url || ""} />
@@ -444,54 +444,6 @@ export default function People() {
       </Tabs>
       </motion.div>
 
-      {/* Profile Dialog */}
-      <Dialog open={profileDialogOpen} onOpenChange={(open) => {
-        setProfileDialogOpen(open);
-        if (!open) {
-          // Delay clearing profile data so content stays visible during close animation
-          setTimeout(() => setSelectedProfile(null), 300);
-        }
-      }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Profile</DialogTitle>
-          </DialogHeader>
-          {displayProfile && (
-            <div className="flex flex-col items-center gap-4 py-4">
-              <Avatar className="h-20 w-20">
-                <AvatarImage src={displayProfile.avatar_url || ""} />
-                <AvatarFallback className="text-2xl bg-primary/10 text-primary font-bold">
-                  {displayProfile.full_name?.[0]?.toUpperCase() || "?"}
-                </AvatarFallback>
-              </Avatar>
-              <div className="text-center">
-                <h2 className="text-xl font-bold">{displayProfile.full_name || "Unknown"}</h2>
-                <p className="text-sm text-muted-foreground">{displayProfile.bio || "No bio"}</p>
-              </div>
-
-              {displayProfile.skills && displayProfile.skills.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {displayProfile.skills.map((s, i) => (
-                    <Badge key={i} variant="secondary" className="text-xs">{s}</Badge>
-                  ))}
-                </div>
-              )}
-
-              {displayProfile.interests && displayProfile.interests.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {displayProfile.interests.map((s, i) => (
-                    <Badge key={i} variant="outline" className="text-xs">{s}</Badge>
-                  ))}
-                </div>
-              )}
-
-              <Button size="icon" onClick={() => { setProfileDialogOpen(false); setSelectedUser(displayProfile.id); setActiveTab("chats"); setTimeout(() => setSelectedProfile(null), 300); }}>
-                <MessageSquare className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
