@@ -15,15 +15,15 @@ import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Calendar } from "@/components/ui/calendar";
+import { OrganizationPolls } from "@/components/organization/OrganizationPolls";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Check, X, UserMinus, Shield, Pencil, Camera, CalendarDays, FileText, Clock,
-  Trash2, Edit, Hash, Plus, Send, MessageSquare, MapPin, CalendarIcon,
+  Check, X, UserMinus, Shield, Pencil, Camera, FileText, Clock,
+  Trash2, Edit, Hash, Plus, Send, MessageSquare,
 } from "lucide-react";
 import type { Tables, Enums } from "@/integrations/supabase/types";
 import { sanitizeError } from "@/lib/sanitize-error";
-import { formatDistanceToNow, format, isSameDay, parseISO } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { FileAttachmentButton, AttachmentPreview } from "@/components/chat/FileAttachment";
 
