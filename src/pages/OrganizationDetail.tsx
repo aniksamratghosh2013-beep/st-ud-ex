@@ -44,17 +44,6 @@ interface MemberWithProfile {
   role: Enums<"app_role"> | null;
 }
 
-interface OrgEvent {
-  id: string;
-  organization_id: string;
-  created_by: string;
-  title: string;
-  description: string | null;
-  event_date: string;
-  event_time: string | null;
-  location: string | null;
-  created_at: string;
-}
 
 interface MessageWithProfile {
   id: string;
@@ -90,16 +79,6 @@ export default function OrganizationDetail() {
   const [newOrgName, setNewOrgName] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState("");
 
-  // Calendar state
-  const [events, setEvents] = useState<OrgEvent[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [calDialogOpen, setCalDialogOpen] = useState(false);
-  const [calTitle, setCalTitle] = useState("");
-  const [calDesc, setCalDesc] = useState("");
-  const [calDate, setCalDate] = useState("");
-  const [calTime, setCalTime] = useState("");
-  const [calLocation, setCalLocation] = useState("");
-  const [calCreating, setCalCreating] = useState(false);
 
   // Chat state
   const [channels, setChannels] = useState<Tables<"chat_channels">[]>([]);
@@ -177,13 +156,6 @@ export default function OrganizationDetail() {
       setOrgPosts(enriched);
     }
 
-    // Fetch events
-    const { data: eventsData } = await supabase
-      .from("organization_events")
-      .select("*")
-      .eq("organization_id", id)
-      .order("event_date", { ascending: true });
-    setEvents(eventsData || []);
 
     // Fetch chat channels
     const { data: channelsData } = await supabase
@@ -380,39 +352,6 @@ export default function OrganizationDetail() {
     }
   };
 
-  // Calendar handlers
-  const handleCreateEvent = async () => {
-    if (!user || !id || !calTitle.trim() || !calDate) return;
-    setCalCreating(true);
-    const { error } = await supabase.from("organization_events").insert({
-      organization_id: id,
-      created_by: user.id,
-      title: calTitle.trim().substring(0, 200),
-      description: calDesc.trim().substring(0, 2000) || null,
-      event_date: calDate,
-      event_time: calTime || null,
-      location: calLocation.trim().substring(0, 200) || null,
-    });
-    setCalCreating(false);
-    if (error) {
-      toast({ title: "Error", description: sanitizeError(error), variant: "destructive" });
-    } else {
-      toast({ title: "Event created!" });
-      setCalTitle(""); setCalDesc(""); setCalDate(""); setCalTime(""); setCalLocation("");
-      setCalDialogOpen(false);
-      fetchData();
-    }
-  };
-
-  const handleDeleteEvent = async (eventId: string) => {
-    const { error } = await supabase.from("organization_events").delete().eq("id", eventId);
-    if (error) {
-      toast({ title: "Error", description: sanitizeError(error), variant: "destructive" });
-    } else {
-      toast({ title: "Event deleted" });
-      fetchData();
-    }
-  };
 
   // Chat handlers
   const uploadAttachment = async (file: File): Promise<{ url: string; name: string; type: string } | null> => {
@@ -499,10 +438,6 @@ export default function OrganizationDetail() {
   const approvedMembers = members.filter((m) => m.status === "approved");
   const canEditBio = isFounder || isAdmin || isSuperAdmin;
 
-  const eventDates = events.map((e) => parseISO(e.event_date));
-  const selectedEvents = selectedDate
-    ? events.filter((e) => isSameDay(parseISO(e.event_date), selectedDate))
-    : [];
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -584,8 +519,7 @@ export default function OrganizationDetail() {
           <TabsTrigger value="about">About</TabsTrigger>
           <TabsTrigger value="members">Members</TabsTrigger>
           <TabsTrigger value="posts">Recently Posted</TabsTrigger>
-          {isSubscribed && <TabsTrigger value="calendar">Calendar</TabsTrigger>}
-          {isSubscribed && <TabsTrigger value="chat">Chat</TabsTrigger>}
+          {isSubscribed && <TabsTrigger value="polls">Polls</TabsTrigger>}
         </TabsList>
 
         {/* About Tab */}
