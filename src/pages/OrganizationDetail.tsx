@@ -520,6 +520,7 @@ export default function OrganizationDetail() {
           <TabsTrigger value="members">Members</TabsTrigger>
           <TabsTrigger value="posts">Recently Posted</TabsTrigger>
           {isSubscribed && <TabsTrigger value="polls">Polls</TabsTrigger>}
+          {isSubscribed && <TabsTrigger value="chat">Chat</TabsTrigger>}
         </TabsList>
 
         {/* About Tab */}
