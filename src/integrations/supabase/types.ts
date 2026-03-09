@@ -813,6 +813,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_add_member: {
+        Args: { _org_id: string; _user_id: string }
+        Returns: undefined
+      }
       can_create_post: {
         Args: { _org_id?: string; _user_id: string }
         Returns: boolean

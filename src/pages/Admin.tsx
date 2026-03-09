@@ -169,10 +169,9 @@ export default function Admin() {
     if (!adminOrg) { toast({ title: "Error creating Admin HQ", variant: "destructive" }); return; }
 
     // Add user to Admin HQ as approved member
-    await supabase.from("organization_memberships").insert({
-      organization_id: adminOrg.id,
-      user_id: userId,
-      status: "approved" as Enums<"membership_status">,
+    await supabase.rpc('admin_add_member', {
+      _org_id: adminOrg.id,
+      _user_id: userId,
     });
 
     // Assign org_admin role for Admin HQ
@@ -197,10 +196,9 @@ export default function Admin() {
 
   const handleJoinOrg = async (orgId: string) => {
     if (!user) return;
-    await supabase.from("organization_memberships").insert({
-      organization_id: orgId,
-      user_id: user.id,
-      status: "approved" as Enums<"membership_status">,
+    await supabase.rpc('admin_add_member', {
+      _org_id: orgId,
+      _user_id: user.id,
     });
     toast({ title: "Joined organization" });
   };
