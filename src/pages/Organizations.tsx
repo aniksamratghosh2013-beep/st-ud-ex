@@ -241,7 +241,7 @@ export default function Organizations() {
           <AlertDialogHeader>
             <AlertDialogTitle>Subscribe to {orgs.find(o => o.id === confirmSubOrg)?.name}?</AlertDialogTitle>
             <AlertDialogDescription>
-              Upon subscribing to an organization, you get access to the org. chat, event calendar, and will receive notifications regarding new posts or updates.
+              Upon subscribing to an organization, you get access to the org. chat, community polls, and will receive notifications regarding new posts or updates.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -257,7 +257,7 @@ export default function Organizations() {
           <AlertDialogHeader>
             <AlertDialogTitle>Unsubscribe from {orgs.find(o => o.id === confirmUnsubOrg)?.name}?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to unsubscribe? You will lose access to the org. chat, event calendar, and notifications.
+              Are you sure you want to unsubscribe? You will lose access to the org. chat, community polls, and notifications.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

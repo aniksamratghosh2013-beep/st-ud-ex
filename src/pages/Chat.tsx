@@ -38,6 +38,7 @@ export default function Chat() {
   const [newChannelName, setNewChannelName] = useState("");
   const [sending, setSending] = useState(false);
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const [isOrgAdmin, setIsOrgAdmin] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Fetch user's orgs
@@ -62,6 +63,19 @@ export default function Chat() {
     };
     fetchOrgs();
   }, [user]);
+
+  // Check admin status for selected org
+  useEffect(() => {
+    if (!selectedOrg || !user) { setIsOrgAdmin(false); return; }
+    const checkAdmin = async () => {
+      const [{ data: adminCheck }, { data: founderCheck }] = await Promise.all([
+        supabase.rpc("is_org_admin", { _user_id: user.id, _org_id: selectedOrg }),
+        supabase.rpc("is_app_founder", { _user_id: user.id }),
+      ]);
+      setIsOrgAdmin(adminCheck === true || founderCheck === true);
+    };
+    checkAdmin();
+  }, [selectedOrg, user]);
 
   // Fetch channels for selected org
   useEffect(() => {
@@ -255,6 +269,7 @@ export default function Chat() {
           ))}
         </div>
 
+        {isOrgAdmin && (
         <div className="flex gap-1">
           <Input
             placeholder="New channel..."
@@ -267,6 +282,7 @@ export default function Chat() {
             <Plus className="h-3.5 w-3.5" />
           </Button>
         </div>
+        )}
       </div>
 
       {/* Main chat area */}

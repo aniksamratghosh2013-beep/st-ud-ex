@@ -7,9 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Camera, Save } from "lucide-react";
+import { Camera, Save, Mail } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { sanitizeError } from "@/lib/sanitize-error";
 import { motion } from "framer-motion";
@@ -22,8 +21,9 @@ export default function Profile() {
   const [saving, setSaving] = useState(false);
   const [fullName, setFullName] = useState("");
   const [bio, setBio] = useState("");
-  const [skills, setSkills] = useState("");
-  const [interests, setInterests] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [changingEmail, setChangingEmail] = useState(false);
+  const [emailSaving, setEmailSaving] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -33,8 +33,6 @@ export default function Profile() {
         setProfile(data);
         setFullName(data.full_name || "");
         setBio(data.bio || "");
-        setSkills((data.skills || []).join(", "));
-        setInterests((data.interests || []).join(", "));
       }
       setLoading(false);
     };
@@ -49,8 +47,6 @@ export default function Profile() {
       .update({
         full_name: fullName,
         bio,
-        skills: skills.split(",").map((s) => s.trim()).filter(Boolean),
-        interests: interests.split(",").map((s) => s.trim()).filter(Boolean),
       })
       .eq("id", user.id);
 
@@ -59,6 +55,20 @@ export default function Profile() {
       toast({ title: "Error", description: sanitizeError(error), variant: "destructive" });
     } else {
       toast({ title: "Profile updated" });
+    }
+  };
+
+  const handleEmailChange = async () => {
+    if (!newEmail.trim()) return;
+    setEmailSaving(true);
+    const { error } = await supabase.auth.updateUser({ email: newEmail.trim() });
+    setEmailSaving(false);
+    if (error) {
+      toast({ title: "Error", description: sanitizeError(error), variant: "destructive" });
+    } else {
+      toast({ title: "Confirmation email sent", description: "Check both your old and new email to confirm the change." });
+      setChangingEmail(false);
+      setNewEmail("");
     }
   };
 
@@ -106,7 +116,7 @@ export default function Profile() {
         <CardContent className="space-y-6">
           {/* Avatar */}
           <div className="flex items-center gap-4">
-            <div className="relative">
+            <div className="relative shrink-0">
               <Avatar className="h-20 w-20">
                 <AvatarImage src={profile?.avatar_url || ""} />
                 <AvatarFallback className="text-lg bg-primary text-primary-foreground">{initials}</AvatarFallback>
@@ -116,31 +126,54 @@ export default function Profile() {
                 <input type="file" className="hidden" accept="image/*" onChange={handleAvatarUpload} />
               </label>
             </div>
-            <div>
-              <p className="font-medium">{fullName || "No name set"}</p>
-              <p className="text-sm text-muted-foreground">{user?.email}</p>
-              <Badge variant="outline" className="mt-1">
-                {profile?.online_status || "offline"}
-              </Badge>
+            <div className="min-w-0">
+              <p className="font-medium truncate">{fullName || "No name set"}</p>
             </div>
           </div>
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Full Name</Label>
+              <Label>Display Name</Label>
               <Input value={fullName} onChange={(e) => setFullName(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label>Bio</Label>
               <Textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} placeholder="Tell us about yourself..." />
             </div>
+
+            {/* Email section */}
             <div className="space-y-2">
-              <Label>Skills (comma-separated)</Label>
-              <Input value={skills} onChange={(e) => setSkills(e.target.value)} placeholder="React, TypeScript, Design..." />
-            </div>
-            <div className="space-y-2">
-              <Label>Interests (comma-separated)</Label>
-              <Input value={interests} onChange={(e) => setInterests(e.target.value)} placeholder="AI, Music, Sports..." />
+              <Label className="flex items-center gap-2">
+                <Mail className="h-3.5 w-3.5" />
+                Email Address
+              </Label>
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-sm text-muted-foreground break-all">{user?.email}</p>
+                {!changingEmail && (
+                  <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => setChangingEmail(true)}>
+                    Change
+                  </Button>
+                )}
+              </div>
+              {changingEmail && (
+                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                  <Input
+                    type="email"
+                    placeholder="New email address"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    className="flex-1 min-w-0"
+                  />
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleEmailChange} disabled={emailSaving || !newEmail.trim()}>
+                      {emailSaving ? "Sending..." : "Confirm"}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => { setChangingEmail(false); setNewEmail(""); }}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

@@ -146,18 +146,18 @@ export default function TrendingOrganizations() {
             </div>
             <div onClick={(e) => e.stopPropagation()}>
               {myMemberships[org.id] === "approved" ? (
-                <Badge variant="secondary" className="text-xs">Joined</Badge>
+                <Button size="sm" variant="secondary" className="h-7 text-xs px-3">Subscribed</Button>
               ) : myMemberships[org.id] === "pending" ? (
                 <Badge variant="outline" className="text-xs">Pending</Badge>
               ) : (
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-7 text-xs"
+                  className="h-7 text-xs px-3"
                   disabled={joiningId === org.id}
                   onClick={() => handleJoin(org.id)}
                 >
-                  {joiningId === org.id ? "..." : "Join"}
+                  {joiningId === org.id ? "..." : "Subscribe"}
                 </Button>
               )}
             </div>

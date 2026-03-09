@@ -704,6 +704,7 @@ export default function OrganizationDetail() {
                   ))}
                 </div>
 
+                {(isFounder || isAdmin || isSuperAdmin) && (
                 <div className="flex gap-1">
                   <Input
                     placeholder="New channel..."
@@ -716,6 +717,7 @@ export default function OrganizationDetail() {
                     <Plus className="h-3.5 w-3.5" />
                   </Button>
                 </div>
+                )}
               </div>
 
               {/* Chat area */}

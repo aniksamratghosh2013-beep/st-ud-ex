@@ -9,9 +9,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Search, MessageSquare, Users, Send, ArrowLeft } from "lucide-react";
+import { Search, MessageSquare, Users, Send, ArrowLeft, Check, CheckCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Tables } from "@/integrations/supabase/types";
 import { sanitizeError } from "@/lib/sanitize-error";
@@ -52,7 +54,6 @@ export default function People() {
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const displayProfileRef = useRef<Tables<"profiles"> | null>(null);
 
-  // Keep displayProfile in sync - update ref when selecting, keep it during close animation
   if (selectedProfile) {
     displayProfileRef.current = selectedProfile;
   }
@@ -66,6 +67,7 @@ export default function People() {
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const [readReceipts, setReadReceipts] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const fetchData = async () => {
@@ -77,7 +79,6 @@ export default function People() {
     setLoading(false);
   };
 
-  // Fetch conversations
   const fetchConversations = async () => {
     if (!user) return;
     const { data: allDMs } = await (supabase as any)
@@ -126,7 +127,6 @@ export default function People() {
   useEffect(() => { fetchData(); }, [user]);
   useEffect(() => { fetchConversations(); }, [user, messages.length]);
 
-  // Chat profile
   useEffect(() => {
     if (!selectedUser) { setChatProfile(null); return; }
     supabase.from("profiles").select("*").eq("id", selectedUser).single()
@@ -159,14 +159,27 @@ export default function People() {
       .channel(`dm-${selectedUser}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "direct_messages" },
+        { event: "*", schema: "public", table: "direct_messages" },
         (payload) => {
-          const msg = payload.new as DM;
-          if (
-            (msg.sender_id === user.id && msg.receiver_id === selectedUser) ||
-            (msg.sender_id === selectedUser && msg.receiver_id === user.id)
-          ) {
-            setMessages(prev => [...prev, msg]);
+          if (payload.eventType === "INSERT") {
+            const msg = payload.new as DM;
+            if (
+              (msg.sender_id === user.id && msg.receiver_id === selectedUser) ||
+              (msg.sender_id === selectedUser && msg.receiver_id === user.id)
+            ) {
+              setMessages(prev => [...prev, msg]);
+              // Auto-mark as read if received
+              if (msg.sender_id === selectedUser) {
+                (supabase as any)
+                  .from("direct_messages")
+                  .update({ read: true })
+                  .eq("id", msg.id)
+                  .then(() => {});
+              }
+            }
+          } else if (payload.eventType === "UPDATE") {
+            const updated = payload.new as DM;
+            setMessages(prev => prev.map(m => m.id === updated.id ? { ...m, read: updated.read } : m));
           }
         }
       )
@@ -239,6 +252,10 @@ export default function People() {
     }
   };
 
+  const handleCloseChat = () => {
+    setSelectedUser(null);
+  };
+
   const filtered = profiles.filter(p =>
     p.id !== user?.id &&
     (p.full_name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -291,8 +308,7 @@ export default function People() {
 
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {filtered.map((profile) => (
-                  <Card key={profile.id} className="cursor-pointer hover:shadow-md transition-shadow"
-                    >
+                  <Card key={profile.id} className="cursor-pointer hover:shadow-md transition-shadow">
                     <CardHeader className="flex flex-row items-center gap-3">
                       <Avatar className="h-12 w-12">
                         <AvatarImage src={profile.avatar_url || ""} />
@@ -334,7 +350,18 @@ export default function People() {
           <div className="flex flex-col md:flex-row h-[calc(100vh-14rem)] gap-4">
             {/* Conversations list */}
             <div className={`w-full md:w-64 flex flex-col gap-2 shrink-0 ${selectedUser ? "hidden md:flex" : "flex"}`}>
-              <h2 className="text-lg font-semibold px-2">Messages</h2>
+              <div className="flex items-center justify-between px-2 gap-2">
+                <h2 className="text-lg font-semibold">Messages</h2>
+                <div className="flex items-center gap-1.5">
+                  <Label htmlFor="read-receipts" className="text-xs text-muted-foreground whitespace-nowrap">Read receipts</Label>
+                  <Switch
+                    id="read-receipts"
+                    checked={readReceipts}
+                    onCheckedChange={setReadReceipts}
+                    className="scale-75"
+                  />
+                </div>
+              </div>
               <div className="flex-1 overflow-auto space-y-1">
                 {conversations.map(c => (
                   <Button
@@ -370,11 +397,19 @@ export default function People() {
 
             {/* Chat area */}
             <Card className={`flex-1 flex flex-col overflow-hidden ${!selectedUser ? "hidden md:flex" : "flex"}`}>
-              {selectedUser ? (
-                chatProfile ? (
-                <>
+              <AnimatePresence mode="wait">
+                {selectedUser ? (
+                  chatProfile ? (
+                    <motion.div
+                      key={selectedUser}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15 }}
+                      className="flex flex-col flex-1 overflow-hidden"
+                    >
                   <div className="p-4 border-b flex items-center gap-3">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedUser(null)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCloseChat}>
                       <ArrowLeft className="h-4 w-4" />
                     </Button>
                     <Avatar className="h-8 w-8">
@@ -403,9 +438,18 @@ export default function People() {
                               {msg.attachment_url && (
                                 <AttachmentPreview url={msg.attachment_url} name={msg.attachment_name || "file"} type={msg.attachment_type || ""} />
                               )}
-                              <span className="text-[10px] opacity-70 mt-1 block">
-                                {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                              </span>
+                              <div className="flex items-center justify-end gap-1 mt-1">
+                                <span className="text-[10px] opacity-70">
+                                  {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                </span>
+                                {readReceipts && msg.sender_id === user?.id && (
+                                  msg.read ? (
+                                    <CheckCheck className="h-3 w-3 opacity-70" />
+                                  ) : (
+                                    <Check className="h-3 w-3 opacity-50" />
+                                  )
+                                )}
+                              </div>
                             </div>
                           </motion.div>
                         ))}
@@ -428,20 +472,33 @@ export default function People() {
                       </Button>
                     </form>
                   </div>
-                </>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="loading"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="flex-1 flex items-center justify-center text-muted-foreground"
+                    >
+                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                    </motion.div>
+                  )
                 ) : (
-                  <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                  </div>
-                )
-              ) : (
-                <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                  <div className="text-center">
-                    <MessageSquare className="h-8 w-8 mx-auto mb-2" />
-                    <p>Select a conversation to start chatting</p>
-                  </div>
-                </div>
-              )}
+                  <motion.div
+                    key="empty"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex-1 flex items-center justify-center text-muted-foreground"
+                  >
+                    <div className="text-center">
+                      <MessageSquare className="h-8 w-8 mx-auto mb-2" />
+                      <p>Select a conversation to start chatting</p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </Card>
           </div>
             </motion.div>
