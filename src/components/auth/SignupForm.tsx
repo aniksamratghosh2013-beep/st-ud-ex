@@ -29,14 +29,30 @@ export const SignupForm = forwardRef<HTMLDivElement, Props>(({ onSwitch }, ref) 
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) || normalizedEmail.length > 254) {
+      setError("Please enter a valid email address.");
+      return;
+    }
     if (!passwordValid) {
       setError("Password must be at least 6 characters with letters and numbers.");
       return;
     }
     setError(null);
     setLoading(true);
+
+    const { data: validation, error: validationError } = await supabase.functions.invoke("validate-email", {
+      body: { email: normalizedEmail },
+    });
+
+    if (validationError || !validation?.valid) {
+      setLoading(false);
+      setError(validation?.message || "We couldn't verify this email right now. Please try again or use another email address.");
+      return;
+    }
+
     const { error } = await supabase.auth.signUp({
-      email,
+      email: normalizedEmail,
       password,
       options: {
         data: { full_name: fullName },
