@@ -214,6 +214,39 @@ export type Database = {
         }
         Relationships: []
       }
+      email_validation_logs: {
+        Row: {
+          created_at: string
+          domain: string | null
+          email: string
+          id: string
+          mx_hosts: string[] | null
+          provider: string | null
+          reason: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          domain?: string | null
+          email: string
+          id?: string
+          mx_hosts?: string[] | null
+          provider?: string | null
+          reason?: string | null
+          status: string
+        }
+        Update: {
+          created_at?: string
+          domain?: string | null
+          email?: string
+          id?: string
+          mx_hosts?: string[] | null
+          provider?: string | null
+          reason?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       follows: {
         Row: {
           created_at: string
