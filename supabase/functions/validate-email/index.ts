@@ -7,7 +7,6 @@ const corsHeaders = {
 };
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const SMTP_TIMEOUT_MS = 4500;
 
 type ValidationStatus = "valid" | "invalid_format" | "does_not_exist" | "unverified";
 
@@ -23,68 +22,41 @@ function normalizeEmail(email: unknown) {
   return email.trim().toLowerCase();
 }
 
-async function resolveMx(domain: string) {
+async function resolveMx(domain: string): Promise<string[]> {
   const url = `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(domain)}&type=MX`;
   const res = await fetch(url, { headers: { accept: "application/dns-json" } });
   if (!res.ok) throw new Error("mx_lookup_failed");
   const data = await res.json();
   return (data.Answer ?? [])
-    .filter((answer: { type: number; data: string }) => answer.type === 15 && answer.data)
-    .map((answer: { data: string }) => answer.data.replace(/^\d+\s+/, "").replace(/\.$/, ""));
+    .filter((a: { type: number; data: string }) => a.type === 15 && a.data)
+    .map((a: { data: string }) => a.data.replace(/^\d+\s+/, "").replace(/\.$/, ""));
 }
 
-async function smtpProbe(email: string, mxHost: string): Promise<ValidationStatus> {
-  let conn: Deno.TcpConn | undefined;
-  const timeout = new Promise<ValidationStatus>((resolve) => {
-    setTimeout(() => resolve("unverified"), SMTP_TIMEOUT_MS);
-  });
-
-  const probe = async (): Promise<ValidationStatus> => {
-    conn = await Deno.connect({ hostname: mxHost, port: 25 });
-    const encoder = new TextEncoder();
-    const decoder = new TextDecoder();
-    const buffer = new Uint8Array(2048);
-
-    const read = async () => decoder.decode(buffer.subarray(0, await conn!.read(buffer) ?? 0));
-    const write = (line: string) => conn!.write(encoder.encode(`${line}\r\n`));
-
-    await read();
-    await write("HELO synedify.app");
-    await read();
-    await write("MAIL FROM:<verify@synedify.app>");
-    await read();
-    await write(`RCPT TO:<${email}>`);
-    const rcpt = await read();
-    await write("QUIT");
-
-    if (/^250|^251/m.test(rcpt)) return "valid";
-    if (/^550|^551|^553|user unknown|mailbox unavailable/i.test(rcpt)) return "does_not_exist";
-    return "unverified";
-  };
-
-  try {
-    return await Promise.race([probe(), timeout]);
-  } catch {
-    return "unverified";
-  } finally {
-    try { conn?.close(); } catch { /* noop */ }
-  }
+async function resolveA(domain: string): Promise<boolean> {
+  const url = `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(domain)}&type=A`;
+  const res = await fetch(url, { headers: { accept: "application/dns-json" } });
+  if (!res.ok) return false;
+  const data = await res.json();
+  return (data.Answer ?? []).some((a: { type: number }) => a.type === 1);
 }
 
 async function logAttempt(email: string, domain: string | null, status: ValidationStatus, reason: string, provider: string, mxHosts: string[]) {
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
-
-  await supabase.from("email_validation_logs").insert({
-    email,
-    domain,
-    status,
-    reason,
-    provider,
-    mx_hosts: mxHosts,
-  });
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !serviceRoleKey) return;
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
+    await supabase.from("email_validation_logs").insert({
+      email,
+      domain,
+      status,
+      reason,
+      provider,
+      mx_hosts: mxHosts,
+    });
+  } catch (e) {
+    console.error("log_attempt_failed", e);
+  }
 }
 
 serve(async (req) => {
@@ -102,32 +74,24 @@ serve(async (req) => {
 
   try {
     const mxHosts = await resolveMx(domain!);
-    if (mxHosts.length === 0) {
-      await logAttempt(email, domain, "does_not_exist", "no_mx_records", "dns", []);
-      return response({ valid: false, message: "The entered email does not exist." }, 400);
+    if (mxHosts.length > 0) {
+      await logAttempt(email, domain, "valid", "mx_records_found", "dns", mxHosts);
+      return response({ valid: true, message: "Email domain verified." });
     }
 
-    const smtpStatus = await smtpProbe(email, mxHosts[0]);
-    if (smtpStatus === "does_not_exist") {
-      await logAttempt(email, domain, smtpStatus, "smtp_rejected_recipient", "smtp", mxHosts);
-      return response({ valid: false, message: "The entered email does not exist." }, 400);
+    // Fallback: some domains accept mail via A record
+    const hasA = await resolveA(domain!);
+    if (hasA) {
+      await logAttempt(email, domain, "valid", "a_record_fallback", "dns", []);
+      return response({ valid: true, message: "Email domain verified." });
     }
 
-    if (smtpStatus === "unverified") {
-      await logAttempt(email, domain, smtpStatus, "mailbox_verification_unavailable", "smtp", mxHosts);
-      return response({
-        valid: false,
-        message: "We couldn't verify this email right now. Please try again or use another email address.",
-      }, 503);
-    }
-
-    await logAttempt(email, domain, "valid", "smtp_accepted_recipient", "smtp", mxHosts);
-    return response({ valid: true, message: "Email verified." });
-  } catch {
+    await logAttempt(email, domain, "does_not_exist", "no_mx_or_a_records", "dns", []);
+    return response({ valid: false, message: "The entered email does not exist." }, 400);
+  } catch (e) {
+    console.error("validation_error", e);
+    // Don't block signup on transient DNS errors
     await logAttempt(email, domain, "unverified", "verification_error", "dns", []);
-    return response({
-      valid: false,
-      message: "We couldn't verify this email right now. Please try again or use another email address.",
-    }, 503);
+    return response({ valid: true, message: "Email accepted (verification skipped)." });
   }
 });
